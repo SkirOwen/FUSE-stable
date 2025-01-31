@@ -152,7 +152,7 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 							position[1] += 1
 							position[0] = 0
 
-					# Need to move the range of co-ordinates that we're searching for for the next sub-module
+				# Need to move the range of co-ordinates that we're searching for for the next sub-module
 
 		structure = {'modules': modules, 'sub module cell': sub_module_cell, 'shape in submods': sub_modules,
 		             'nmods': n_sub, 'ap': initial_guess, 'atoms': full_structure}

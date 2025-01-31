@@ -9,4 +9,4 @@ setup(
 	author='Chris Collins',
 	author_email='c.m.collins@liverpool.ac.uk',
 	packages=['fuse202']
-	)
+)
