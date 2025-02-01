@@ -1,0 +1,6 @@
+ase
+chgnet # pip only
+numpy
+pandas
+spglib
+torch
