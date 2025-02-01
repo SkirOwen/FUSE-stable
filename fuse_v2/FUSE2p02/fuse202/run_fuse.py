@@ -261,8 +261,7 @@ def run_fuse(
 		assemble_spp(elements, spp_path=spp_path)
 
 	if max_fus == 0:
-		print("ERROR: maximum number of Fus equals 0!, please increase maximum number of atoms in input!")
-		sys.exit()
+		raise ValueError("maximum number of Fus is 0!, please increase maximum number of atoms in input!")
 
 	if imax_fus == 0:
 		imax_fus = 1
