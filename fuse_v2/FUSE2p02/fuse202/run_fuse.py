@@ -94,18 +94,18 @@ move_des = {
 # define main fuse function
 ################################################################################
 def run_fuse(
-		composition='',
+		composition: dict = '',
 		# composition in dictionary format, set the keys to be the element types and the values to be the composition in integers, e.g. {'Ca':3,'Al':2,'Si':3,'O':12}
-		max_atoms='',  # maximum number of atoms to use within the calculation, e.g. 160
-		imax_atoms='',  # maximum number of atoms to use when generating a random initial population, e.g. 80
-		restart=False,  # restart previous calculation
-		max_ax=40,  # maximum number of sub-modules along a given unit cell axis
-		density_cutoff=0.4,
+		max_atoms: int = 0,  # maximum number of atoms to use within the calculation, e.g. 160
+		imax_atoms: int = 0,  # maximum number of atoms to use when generating a random initial population, e.g. 80
+		restart: bool =False,  # restart previous calculation
+		max_ax: int =40,  # maximum number of sub-modules along a given unit cell axis
+		density_cutoff: float = 0.4,
 		# density cutoff for randomly generated structures, expressed as a fraction of the maximum packing density (which FUSE works out internally)
-		check_bonds=True,  # check bond numbers / distances as part of the structure error checking
-		btol=0.25,  # fraction of incorrect bonds that FUSE will accept when generating / modifying structures
-		check_distances=True,  # check for short interatomic distances when error checking a structure?
-		dist_cutoff=1.0,  # shortest permitted interatomic contact defined in angstroms
+		check_bonds: bool = True,  # check bond numbers / distances as part of the structure error checking
+		btol: float = 0.25,  # fraction of incorrect bonds that FUSE will accept when generating / modifying structures
+		check_distances: bool = True,  # check for short interatomic distances when error checking a structure?
+		dist_cutoff: float = 1.0,  # shortest permitted interatomic contact defined in angstroms
 		system_type="neutral",  # the system type? note: only using "neutral" at the moment!
 		vac_ratio=4,  # when generating random structures, the maximum ratio of vacent sites : 1 atom
 		write_all_structures=True,  # write out all of the geometry optimised structures which FUSE generates
