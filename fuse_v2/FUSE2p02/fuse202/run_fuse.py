@@ -1,24 +1,28 @@
-################################################################################
-# fuse imports
-################################################################################
 import datetime
-import fuse202.bond_table
 import glob
 import math
-import numpy
 import os
-import pandas
 import pickle
 import random
 import shutil
+import statistics
 import sys
 import time
 import warnings
+
+from decimal import Decimal
+from random import choice
+
+import fuse202.bond_table
+import numpy
+import numpy as np
+import pandas
+import pandas as pd
+
 from ase import Atoms
+
 from ase.io import *
 from ase.visualize import *
-from decimal import *
-from decimal import *
 from fuse202.assemble_spp import *
 from fuse202.extract_modules import *
 from fuse202.generate_random_structure import *
@@ -31,12 +35,7 @@ from fuse202.run_gulp import *
 from fuse202.run_multiple_calculators import run_calculators
 from fuse202.run_qe import *
 from fuse202.run_vasp import *
-################################################################################
-# other imports
-################################################################################
-from random import choice
 
-################################################################################
 
 # warnings.filterwarnings("ignore") # currently use this as python raises RuntimeError
 # warnings when a physically unreasonable unit cell is generated, this is caught
@@ -44,7 +43,7 @@ from random import choice
 # needed. Comment this out for debugging.
 
 t1 = datetime.datetime.now()
-# desctription of each of the BH moves to print out
+# description of each of the BH moves to print out
 #	1. swap two atoms - DONE
 #	2. swap an atom in to a vacent space - DONE
 
@@ -87,7 +86,8 @@ move_des = {
 	11: "Double the structure",
 	12: "Triple the structure",
 	13: "Random new structure upto current size",
-	14: "Random new structure, including pulling from prebuilt pool"}
+	14: "Random new structure, including pulling from prebuilt pool",
+}
 
 
 ################################################################################
@@ -98,8 +98,8 @@ def run_fuse(
 		# composition in dictionary format, set the keys to be the element types and the values to be the composition in integers, e.g. {'Ca':3,'Al':2,'Si':3,'O':12}
 		max_atoms: int = 0,  # maximum number of atoms to use within the calculation, e.g. 160
 		imax_atoms: int = 0,  # maximum number of atoms to use when generating a random initial population, e.g. 80
-		restart: bool =False,  # restart previous calculation
-		max_ax: int =40,  # maximum number of sub-modules along a given unit cell axis
+		restart: bool = False,  # restart previous calculation
+		max_ax: int = 40,  # maximum number of sub-modules along a given unit cell axis
 		density_cutoff: float = 0.4,
 		# density cutoff for randomly generated structures, expressed as a fraction of the maximum packing density (which FUSE works out internally)
 		check_bonds: bool = True,  # check bond numbers / distances as part of the structure error checking
@@ -140,7 +140,7 @@ def run_fuse(
 		# For my machine, I've setup gn-boss in a seperate python environment, this is the command for that version of python
 		gn_search='tpe',  # 'rand' random search, 'tpe' baysian opt, 'pso' particle swarm
 		gn_max_step=500,  # number of generation attempts for gn-boss
-		gn_template_path=os.environ['GNBOSS_TEMP'],  # path to template files for using gn-boss
+		gn_template_path=None,  # path to template files for using gn-boss
 		gn_zn_range=[1, 4],  # numbers of formula units to scan with GN-BOSS for generating structures
 		rank_gn_structures='single',
 		# if None; do not rank structures, this should only be set if pull_random = True above, if 'opti' rank with SPPs AFTER geometry optimising the, if 'sing' rank based on single point calculations with SPPs.
@@ -194,7 +194,7 @@ def run_fuse(
 		gulp_timeout='',  # timeout command for running GULP, note only works in Windows!
 		calcs='',  # list to tell FUSE which calculators to use and in which order
 		assemble_spp_=False,  # if set to True, collate the spp potential library for the calculation
-		spp_path=os.environ['SPP_PATH'],  # path to spp potential libraries
+		spp_path=None,  # path to spp potential libraries
 		# VASP:
 		vasp_opts='',  # options for each Vasp calculation
 		kcut=30,
@@ -216,14 +216,16 @@ def run_fuse(
 	t0 = time.time()
 	################################################################################
 
-	print("################################################################################")
-	print("#									       #")
-	print("#		       Flexible Unit Structure Engine			       #")
-	print("#				 (FUSE)					       #")
-	print("#				 v2.02            			       #")
-	print("#				                          		       #")
-	print("################################################################################")
-	print("\n\n")
+	print(
+		"################################################################################\n"
+		"#                                                                              #\n"
+		"#                       Flexible Unit Structure Engine                         #\n"
+		"#                                   (FUSE)                                     #\n"
+		"#                                   v2.02                                      #\n"
+		"#                                                                              #\n"
+		"################################################################################\n"
+		"\n"
+	)
 
 	#############################################################################
 	# start up bits / calculations
@@ -239,11 +241,15 @@ def run_fuse(
 	# number of formula units in the general population
 	max_fus: int = max_atoms // atoms_per_fu
 	# get possible unit cell sizes / shapes
-	cubic_solutions, tetragonal_solutions, hexagonal_solutions, orthorhombic_solutions, monoclinic_solutions = possible_solutions(
-		max_ax, restart)
+
+	solutions = possible_solutions(max_ax, restart)
+	cubic_solutions, tetragonal_solutions, hexagonal_solutions, orthorhombic_solutions, monoclinic_solutions = solutions
+
 	# load bond table data
+	# TODO: redo the bound table
 	bondtable = numpy.load("bondtable.npz", allow_pickle=True)
 	bondtable = bondtable['bond_table'].item()
+
 	# set the original temperature value
 	T0 = T
 	# set the environment variable for spp_path if needed
@@ -256,6 +262,7 @@ def run_fuse(
 		import spglib
 
 	# Check to see if SPP needs assembling:
+	# TODO: test with the SPP fetcher
 	if assemble_spp_ == True:
 		elements = list(composition.keys())
 		assemble_spp(elements, spp_path=spp_path)
@@ -302,63 +309,25 @@ def run_fuse(
 	#
 	# ideal_density = mass / volume
 
-	# calculate the total volume / mass of 1 FU #	
-	for i in range(len(fu)):
-		temp = Atoms(numbers=[fu[i]])
-		mass += temp.get_masses()[0]
-		temp = temp.get_chemical_symbols()[0]
-		temp = bondtable[temp]
-		if len(list(temp.keys())) > 1:
-			rs = []
-			keys = list(temp.keys())
-			for j in range(len(list(temp.keys()))):
-				rs.append(temp[keys[j]][-1])
-			volume += ((4 / 3) * math.pi * (min(rs) ** 3))
-		else:
-			volume += ((4 / 3) * math.pi * (temp[list(temp.keys())[0]][-1] ** 3))
-
-	ideal_density = mass / volume
-
 	#############################################################################
 
 	### compute ap value ########################################################
 
 	#### compute the ap to be used for the sub-modules ##########################
 	# convert the fu back to symbols
-	symbol_fu = []
-	for i in range(len(fu)):
-		temp = Atoms(numbers=[fu[i]])
-		symbol_fu.append(temp.get_chemical_symbols()[0])
+	symbol_fu = [Atoms(numbers=[v]).get_chemical_symbols()[0] for v in fu]
+
 	# read in shannon radi table
 	# temp=numpy.load("bondtable.npz",allow_pickle=True)
 	# bond_table=temp['bond_table'].item()
-	ap = 0
-	if system_type == "neutral":
-		for i in range(len(symbol_fu)):
-			average = 0
-			temp = list(bondtable[symbol_fu[i]].keys())
-			for j in range(len(temp)):
-				average += bondtable[symbol_fu[i]][temp[j]][-1]
-			average = average / len(temp)
-			ap += average
 
-	ap = ap / len(symbol_fu)
-	ap = 4 * ap
-
-	if ap_scale != '':
-		ap = ap * ap_scale
-
-	if fixed_ap != '':
-		ap = fixed_ap
-
-	ap = float(Decimal(ap).quantize(Decimal('1e-4')))
+	ap = cal_ap(ap_scale, bondtable, fixed_ap, symbol_fu, system_type)
 	#############################################################################
 
 	#### work out the normalised version of the input composition ############### 
-	norm_comp = {}
+
 	norm_factor = round(min(list(composition.values())), 2)
-	for i in list(composition.keys()):
-		norm_comp[i] = round(composition[i] / norm_factor, 2)
+	norm_comp = {element: round(count / norm_factor, 2) for element, count in composition.items()}
 
 	#############################################################################
 	#############################################################################
@@ -716,9 +685,15 @@ def run_fuse(
 						continue
 					if ranking == 'gulp':
 						try:
-							atoms, energy, converged = run_gulp(atoms=atoms, shel=shel, kwds=r_kwds, opts=r_gulp_opts,
-							                                    lib=r_lib, produce_steps=False,
-							                                    gulp_command=gulp_command, gulp_timeout=gulp_timeout)
+							atoms, energy, converged = run_gulp(
+								atoms=atoms,
+								shel=shel,
+								kwds=r_kwds,
+								opts=r_gulp_opts,
+								lib=r_lib, produce_steps=False,
+								gulp_command=gulp_command,
+								gulp_timeout=gulp_timeout
+							)
 						except:
 							converged = False
 							energy = 1.e20
@@ -1866,6 +1841,37 @@ def run_fuse(
 	# close the output file and exit
 	o.close()
 	sys.exit()
+
+
+def cal_ap(bondtable: dict, symbol_fu: list, system_type: str, ap_scale, fixed_ap) -> float:
+	"""
+	Calculate the ap value based on bondtable data.
+
+	Args:
+		bondtable (dict): Dictionary containing bond radii information.
+		symbol_fu (list): List of atomic numbers representing one formula unit.
+		system_type (str): The system type (e.g., "neutral").
+		ap_scale (str, optional): Scale factor applied to ap value.
+		fixed_ap (str, optional): Fixed ap value, if provided.
+
+	Returns:
+		float: Computed ap value.
+	"""
+	if system_type != "neutral":
+		return 0.0
+
+	ap = statistics.fmean(
+		statistics.fmean(
+			bound_value[-1] for bound_value in bondtable[symbol].values()
+		) for symbol in symbol_fu
+	)
+	ap = 4 * ap
+	if ap_scale:
+		ap = ap * ap_scale
+	if fixed_ap:
+		ap = fixed_ap
+
+	return float(Decimal(ap).quantize(Decimal('1e-4')))
 
 
 def cal_ideal_density(bondtable: dict, fu) -> float:
