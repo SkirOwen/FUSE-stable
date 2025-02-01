@@ -29,8 +29,12 @@ def assemble_structure2(structure):
 	cell_shape = structure['shape in submods']
 	ap = structure['ap']
 	# 1. set the target cell shape in sub-modules
-	cell_par = [round(ap * cell_shape[0], 6), round(ap * cell_shape[1], 6), round((ap / 2) * cell_shape[2], 6),
-	            cell_shape[3], cell_shape[4], cell_shape[5]]
+	cell_par = [
+		round(ap * cell_shape[0], 6),
+		round(ap * cell_shape[1], 6),
+		round((ap / 2) * cell_shape[2], 6),
+		cell_shape[3], cell_shape[4], cell_shape[5],
+	]
 	# view(modules)
 
 	# 2. start pulling out modules
@@ -102,5 +106,3 @@ def assemble_structure2(structure):
 # energy=atoms.get_potential_energy()
 # print(energy/len(atoms))
 #
-#
-# In[ ]:
