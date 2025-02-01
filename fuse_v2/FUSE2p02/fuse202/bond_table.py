@@ -1,9 +1,11 @@
 # bonding environments for neutral systems in FUSE, atomic radii used from VESTA version 3.4.8
 # format: 1st keys: element symbold, 2nd keys: oxidation state; values: 0 = min bond, 1 = max bond, 2= atomic radius
 # all CN numbers start from 1, upto either max in shannon table or  at least 12 if metallic radii
-import numpy
+import numpy as np
 
-lib = {
+BOND_TABLE_FILE = "bondtable.npz"
+
+BOND_DATA = {
 	'H': {0: [1, 2, 0.46]},
 	'Li': {0: [4, 12, 1.57]},
 	'Be': {0: [3, 12, 1.12]},
@@ -99,4 +101,27 @@ lib = {
 	'Cf': {0: [6, 12, 1.00]},
 	'No': {0: [6, 12, 1.00]}
 }
-numpy.savez("bondtable", bond_table=lib)
+
+import os
+def initialize_bond_table(force_rebuild: bool = False) -> None:
+	"""Creates the bond table file if it does not exist or if force_rebuild is True."""
+	if not os.path.exists(BOND_TABLE_FILE) or force_rebuild:
+		print(f"Creating {BOND_TABLE_FILE}...")
+		np.savez(BOND_TABLE_FILE, bond_table=BOND_DATA)
+	else:
+		print(f"{BOND_TABLE_FILE} already exists. Use force_rebuild=True to recreate it.")
+
+
+def load_bond_table() -> dict:
+	"""Loads the bond table from the .npz file, initializing it if necessary."""
+	if not os.path.exists(BOND_TABLE_FILE):
+		print(f"{BOND_TABLE_FILE} not found. Creating it now...")
+		initialize_bond_table()
+
+	data = np.load(BOND_TABLE_FILE, allow_pickle=True)
+	return data["bond_table"].item()
+
+
+# Lazy loading: Only load bond table when explicitly called
+if __name__ == "__main__":
+	initialize_bond_table()  # Runs only if executed directly
