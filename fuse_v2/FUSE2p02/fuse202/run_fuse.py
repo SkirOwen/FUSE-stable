@@ -269,15 +269,39 @@ def run_fuse(
 
 	# calculating ideal density###################################################
 
-	# create a string containing the atomic numbers for 1 FU #
-	keys = list(composition.keys())
 	fu = []
-	for i in range(len(keys)):
-		for j in range(composition[keys[i]]):
-			fu.append(Atoms(keys[i]).get_atomic_numbers()[0])
+	for element, count in composition.items():
+		atomic_number = Atoms(element).get_atomic_numbers()[0]
+		fu.extend([atomic_number] * count)
 
-	mass = 0
-	volume = 0
+	ideal_density = cal_ideal_density(bondtable, fu)
+
+	# create a string containing the atomic numbers for 1 FU #
+	# keys = list(composition.keys())
+	# fu = []
+	# for i in range(len(keys)):
+	# 	for j in range(composition[keys[i]]):
+	# 		fu.append(Atoms(keys[i]).get_atomic_numbers()[0])
+	#
+	# mass = 0
+	# volume = 0
+	#
+	# # calculate the total volume / mass of 1 FU #
+	# for i in range(len(fu)):
+	# 	temp = Atoms(numbers=[fu[i]])
+	# 	mass += temp.get_masses()[0]
+	# 	temp = temp.get_chemical_symbols()[0]
+	# 	temp = bondtable[temp]
+	# 	if len(list(temp.keys())) > 1:
+	# 		rs = []
+	# 		keys = list(temp.keys())
+	# 		for j in range(len(list(temp.keys()))):
+	# 			rs.append(temp[keys[j]][-1])
+	# 		volume += ((4 / 3) * math.pi * (min(rs) ** 3))
+	# 	else:
+	# 		volume += ((4 / 3) * math.pi * (temp[list(temp.keys())[0]][-1] ** 3))
+	#
+	# ideal_density = mass / volume
 
 	# calculate the total volume / mass of 1 FU #	
 	for i in range(len(fu)):
@@ -1843,6 +1867,22 @@ def run_fuse(
 	# close the output file and exit
 	o.close()
 	sys.exit()
+
+
+def cal_ideal_density(bondtable: dict, fu) -> float:
+	# create a string containing the atomic numbers for 1 FU
+	# calculate the total volume / mass of 1 FU
+	mass = sum(Atoms(numbers=[v]).get_masses()[0] for v in fu)
+
+	volume = sum(
+		(4 / 3) * math.pi * min(
+			bound_value[-1] for bound_value in bondtable[Atoms(numbers=[v]).get_chemical_symbols()[0]].values()
+		) ** 3
+		for v in fu
+	)
+
+	ideal_density = mass / volume
+	return ideal_density
 
 # next things to do:
 
