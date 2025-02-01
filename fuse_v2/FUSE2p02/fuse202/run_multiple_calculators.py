@@ -1,24 +1,25 @@
 import glob
 import math
-import numpy
 import os
 import platform
 import re
-import re
-################################################################################################
 import shlex
 import sys
+from typing import Any
+
+import numpy as np
+
 from ase import *
+from ase import Atoms
 from ase.calculators.gulp import GULP
 from ase.calculators.vasp import Vasp
 from ase.io import *
+
 from fuse202.gulp import *
 from fuse202.run_chgnet import *
 from fuse202.run_gulp import *
 from fuse202.run_qe import *
 from fuse202.run_vasp import *
-from numpy import arccos, pi, dot
-from numpy.linalg import norm
 
 
 # def cellpar(atoms):
@@ -36,10 +37,27 @@ from numpy.linalg import norm
 ################################################################################################
 # making the assumption that we don't want the energy from gulp when using this, trying setting the 
 # energy to zero after gulp has run
-def run_calculators(atoms='', vasp_opts='', kcut='', produce_steps='',
-                    shel=None, kwds='', gulp_opts='', lib='', calcs='', dist_cutoff='', qe_opts='',
-                    gulp_command='gulp < gulp.gin > gulp.got', gulp_timeout='',
-                    n_opts='', rel='', relaxer_opts='', opt_class='', opt_device='', mode='relax'):
+def run_calculators(
+		atoms='',
+		vasp_opts='',
+		kcut='',
+		produce_steps='',
+		shel=None,
+		kwds='',
+		gulp_opts='',
+		lib='',
+		calcs='',
+		dist_cutoff='',
+		qe_opts='',
+		gulp_command='gulp < gulp.gin > gulp.got',
+		gulp_timeout='',
+		n_opts='',
+		rel='',
+		relaxer_opts='',
+		opt_class='',
+		opt_device='',
+		mode='relax'
+) -> tuple:
 	converged = None
 	energy = 0
 	for x in range(len(calcs)):
@@ -56,25 +74,48 @@ def run_calculators(atoms='', vasp_opts='', kcut='', produce_steps='',
 		if distances <= dist_cutoff:
 			short_contact = True
 
-		if short_contact == False:
+		if not short_contact:
 			if energy < 10.:
 				if calcs[x] == 'gulp':
-					atoms, energy, converged = run_gulp(atoms=atoms, shel=shel, kwds=kwds, opts=gulp_opts, lib=lib,
-					                                    produce_steps=produce_steps, gulp_command=gulp_command,
-					                                    gulp_timeout=gulp_timeout)
+					atoms, energy, converged = run_gulp(
+						atoms=atoms,
+						shel=shel,
+						kwds=kwds,
+						opts=gulp_opts,
+						lib=lib,
+						produce_steps=produce_steps,
+						gulp_command=gulp_command,
+						gulp_timeout=gulp_timeout
+					)
 					energy = 0.
 
 				elif calcs[x] == 'vasp':
-					atoms, energy, converged = run_vasp(atoms=atoms, vasp_opts=vasp_opts, kcut=kcut,
-					                                    produce_steps=produce_steps, dist_cutoff=dist_cutoff)
+					atoms, energy, converged = run_vasp(
+						atoms=atoms,
+						vasp_opts=vasp_opts,
+						kcut=kcut,
+						produce_steps=produce_steps,
+						dist_cutoff=dist_cutoff
+					)
 
 				elif calcs[x] == 'qe':
-					atoms, energy, converged = run_qe(atoms=atoms, qe_opts=qe_opts, kcut=kcut,
-					                                  produce_steps=produce_steps)
+					atoms, energy, converged = run_qe(
+						atoms=atoms,
+						qe_opts=qe_opts,
+						kcut=kcut,
+						produce_steps=produce_steps
+					)
 
 				elif calcs[x] == 'chgnet':
-					atoms, energy, converged = run_chgnet(atoms, n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts,
-					                                      opt_class=opt_class, opt_device=opt_device, mode=mode)
+					atoms, energy, converged = run_chgnet(
+						atoms,
+						n_opts=n_opts,
+						rel=rel,
+						relaxer_opts=relaxer_opts,
+						opt_class=opt_class,
+						opt_device=opt_device,
+						mode=mode
+					)
 
 	try:
 		if glob.glob("gulptmp*") != []:

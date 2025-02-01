@@ -7,17 +7,26 @@ from pymatgen.core import Structure
 from pymatgen.io.cif import *
 
 
-def run_chgnet(atoms, n_opts=2, rel=StructOptimizer(), relaxer_opts={
-	'fmax': [0.1, 0.05],
-	'steps': [250, 750],
-	'verbose': [True, True]
-}
-               , opt_class=['FIRE', 'BFGSLineSearch'],
-               mode='relax',
-               opt_device='cpu',
-               use_spglib=True
-               ):
+def run_chgnet(
+		atoms,
+		n_opts=2,
+		rel=StructOptimizer(),
+		relaxer_opts=None,
+		opt_class=None,
+		mode='relax',
+		opt_device='cpu',
+		use_spglib=True
+):
 	# First do a quick test to make sure that there are no isolated atoms (> 6 angstroms from their nearest neighbour)
+	if opt_class is None:
+		opt_class = ['FIRE', 'BFGSLineSearch']
+	if relaxer_opts is None:
+		relaxer_opts = {
+			'fmax': [0.1, 0.05],
+			'steps': [250, 750],
+			'verbose': [True, True]
+		}
+
 	for i in range(len(atoms)):
 		j = list(range(len(atoms)))
 		j.remove(i)
@@ -37,8 +46,12 @@ def run_chgnet(atoms, n_opts=2, rel=StructOptimizer(), relaxer_opts={
 		try:
 			for i in range(n_opts):
 				relaxer = StructOptimizer(optimizer_class=opt_class[i], use_device=opt_device)
-				prediction = relaxer.relax(temp_atoms, fmax=relaxer_opts['fmax'][i], steps=relaxer_opts['steps'][i],
-				                           verbose=relaxer_opts['verbose'][i])
+				prediction = relaxer.relax(
+					temp_atoms,
+					fmax=relaxer_opts['fmax'][i],
+					steps=relaxer_opts['steps'][i],
+					verbose=relaxer_opts['verbose'][i],
+				)
 				temp_atoms = prediction['final_structure']
 
 			result = chgnet.predict_structure(temp_atoms)
@@ -54,7 +67,7 @@ def run_chgnet(atoms, n_opts=2, rel=StructOptimizer(), relaxer_opts={
 
 			atoms = read("temp.cif")
 
-			if use_spglib == True:
+			if use_spglib:
 				try:
 					lattice, positions, numbers = spglib.standardize_cell(atoms, symprec=1.e-5)
 					temp2 = Atoms(numbers=numbers, pbc=True)
