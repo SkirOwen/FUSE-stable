@@ -235,9 +235,9 @@ def run_fuse(
 	# get atoms per formula unit
 	atoms_per_fu = sum(composition.values())
 	# number of formula units in the initial population
-	imax_fus = int(imax_atoms / atoms_per_fu)
+	imax_fus: int = imax_atoms // atoms_per_fu
 	# number of formula units in the general population
-	max_fus = int(max_atoms / atoms_per_fu)
+	max_fus: int = max_atoms // atoms_per_fu
 	# get possible unit cell sizes / shapes
 	cubic_solutions, tetragonal_solutions, hexagonal_solutions, orthorhombic_solutions, monoclinic_solutions = possible_solutions(
 		max_ax, restart)
