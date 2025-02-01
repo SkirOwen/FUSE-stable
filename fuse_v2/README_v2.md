@@ -17,7 +17,7 @@ We recommend setting up FUSE v.2 using Anaconda with python 3.9 or newer, as thi
 
 ********************************************************************************
 
-FUSE v.2 is dependant on the following packages:
+FUSE v.2 is dependent on the following packages:
 
 The atomic simulation environment (ase) version 23 or later
 Pandas
@@ -26,11 +26,11 @@ func_timeout
 
 all are available using pip
 
-FUSE also uses external chemistry codes in order to perform energy calculations, which you will need acess to in order to perform CSP calculations.
+FUSE also uses external chemistry codes in order to perform energy calculations, which you will need access to in order to perform CSP calculations.
 
 Currently, GULP, VASP are supported, with Quantum Espresso implemented, but this has not been tested extensively.
 In principle, any calculator which is supported by ase should be useable (https://wiki.fysik.dtu.dk/ase/).
-If there is a currently un-supported calculator that you would like to use, please to get in touch!
+If there is a currently un-supported calculator that you would like to use, please get in touch!
 
 We have additionally implemented the use of the CHGNet ML potential published here by B. Deng et al. :
 
@@ -61,21 +61,21 @@ https://www.nature.com/articles/s41467-022-29241-4
 to install, first unpack the "gnboss_template.zip" archive and go into the first directory.
 
 create a fresh anaconda environment:
-
+```
 conda create --name gnboss python=3.6.13
-
+```
 activate the environment:
-
+```
 conda activate gnboss
-
+```
 then install the required packages:
-
+```
 python -m pip install -r requirements.txt
-
+```
 then deactivate the model by typing:
-
+```
 conda deactivate.
-
+```
 **********************************************************************************
 
 To use the statistical proxy potential library provided, unzip the "SPP_light.zip" and take note of path to the unpacked directory.
