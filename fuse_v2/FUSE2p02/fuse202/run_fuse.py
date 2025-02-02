@@ -194,7 +194,7 @@ def run_fuse(
 		gulp_timeout='',  # timeout command for running GULP, note only works in Windows!
 		calcs='',  # list to tell FUSE which calculators to use and in which order
 		assemble_spp_=False,  # if set to True, collate the spp potential library for the calculation
-		spp_path=None,  # path to spp potential libraries
+		spp_path=None,  # path to spp potential libraries # FIXME
 		# VASP:
 		vasp_opts='',  # options for each Vasp calculation
 		kcut=30,
@@ -257,13 +257,13 @@ def run_fuse(
 	#	os.environ['SPP_PATH']=spp_path
 
 	# if needed import spglib
-	if use_spglib == True:
+	if use_spglib:
 		# print("I'm using SPGLIB!!!")
 		import spglib
 
 	# Check to see if SPP needs assembling:
 	# TODO: test with the SPP fetcher
-	if assemble_spp_ == True:
+	if assemble_spp_:
 		elements = list(composition.keys())
 		assemble_spp(elements, spp_path=spp_path)
 
@@ -282,38 +282,8 @@ def run_fuse(
 
 	ideal_density = cal_ideal_density(bondtable, fu)
 
-	# create a string containing the atomic numbers for 1 FU #
-	# keys = list(composition.keys())
-	# fu = []
-	# for i in range(len(keys)):
-	# 	for j in range(composition[keys[i]]):
-	# 		fu.append(Atoms(keys[i]).get_atomic_numbers()[0])
-	#
-	# mass = 0
-	# volume = 0
-	#
-	# # calculate the total volume / mass of 1 FU #
-	# for i in range(len(fu)):
-	# 	temp = Atoms(numbers=[fu[i]])
-	# 	mass += temp.get_masses()[0]
-	# 	temp = temp.get_chemical_symbols()[0]
-	# 	temp = bondtable[temp]
-	# 	if len(list(temp.keys())) > 1:
-	# 		rs = []
-	# 		keys = list(temp.keys())
-	# 		for j in range(len(list(temp.keys()))):
-	# 			rs.append(temp[keys[j]][-1])
-	# 		volume += ((4 / 3) * math.pi * (min(rs) ** 3))
-	# 	else:
-	# 		volume += ((4 / 3) * math.pi * (temp[list(temp.keys())[0]][-1] ** 3))
-	#
-	# ideal_density = mass / volume
-
-	#############################################################################
-
-	### compute ap value ########################################################
-
-	#### compute the ap to be used for the sub-modules ##########################
+	# compute ap value
+	# compute the ap to be used for the sub-modules
 	# convert the fu back to symbols
 	symbol_fu = [Atoms(numbers=[v]).get_chemical_symbols()[0] for v in fu]
 
@@ -355,11 +325,11 @@ def run_fuse(
 	# startup bits for resuming an old calculation 
 	#############################################################################
 
-	if restart == True:
+	if restart:
 		# append to previous output.txt file
 		o = open("output.txt", 'a')
 		# check that the structures folder exisits
-		if not os.path.isdir("structures"):
+		if not os.path.exists("structures"):
 			os.mkdir("structures")
 		used_backup = False
 		try:
@@ -473,7 +443,7 @@ def run_fuse(
 	# startup bits for a fresh calculation 
 	#############################################################################
 
-	if restart == False:
+	else:
 		# flag to indicate that there are no outstanding energy calculations to do.
 		# count since the current global minimum was identified
 		r = 0
@@ -497,53 +467,52 @@ def run_fuse(
 		graph_output = {'move': [], 'type': [], 'step': [], 'energy': [], 'temperature': [], 'current energy': [],
 		                'global minimum energy': [], 'structure file name': [], 'accepted?': []}
 
+###
+
+		# FIXME: !!!!!
 		# create directory for output structures, if it already exisits, clear it out
-		if write_all_structures == True:
-			if not os.path.isdir("structures"):
+		if write_all_structures:
+			if not os.path.exists("structures"):
 				os.mkdir("structures")
 
-		os.chdir("structures")
-		if glob.glob("*.cif") != []:
-			if platform.system() == 'Windows':
-				os.system("del *.cif")
-			if platform.system() == 'Linux':
-				os.system("rm *.cif")
-		os.chdir("../")
+		# if glob.glob("structures/*.cif"):
+		# 	if platform.system() == 'Windows':
+		# 		os.system("del *.cif")
+		# 	if platform.system() == 'Linux':
+		# 		os.system("rm *.cif")
+
 
 		# check to see if there's a restart folder, if so, clear it
-		if not os.path.isdir("restart"):
+		if not os.path.exists("restart"):
 			os.mkdir("restart")
 
-		os.chdir("restart")
-		to_remove = glob.glob("*")
+		to_remove = glob.glob("restart/*")
 		if platform.system() == 'Windows':
 			for i in to_remove:
 				os.remove(i)
 		if platform.system() == 'Linux':
-			os.system("rm *")
-		os.chdir("../")
+			# os.system("rm *")
+			pass
 
 		# check to see if there is a backup directory, if so clear it
-		if not os.path.isdir("backup"):
+		if not os.path.exists("backup"):
 			os.mkdir("backup")
 
-		os.chdir("backup")
-		to_remove = glob.glob("*")
+		to_remove = glob.glob("backup/*")
 		if platform.system() == 'Windows':
 			for i in to_remove:
 				if os.path.isfile(i):
 					os.remove(i)
 
-			if os.path.isdir("structures"):
-				os.chdir("structures")
-				to_remove2 = glob.glob("*")
+			if os.path.exists("structures"):
+				to_remove2 = glob.glob("structures/*")
 				for i in to_remove2:
 					os.remove(i)
-				os.chdir("../")
 
 		if platform.system() == 'Linux':
-			os.system("rm -r *")
-		os.chdir("../")
+			# os.system("rm -r *")
+			pass
+##
 
 		# starting here, if it's been selected in the input file, go through and run gn-boss to generate starting structures
 
@@ -556,11 +525,11 @@ def run_fuse(
 		# rank_gn_structures=True, #if true, rank the output of the model using SPPs. this is needed if pull_spp_rank = True above
 		# clear_previous_gn_structures=True, #if set to True, before starting the calcluation, remove any previous structures from reference structures & gn-boss generated_results.
 
-		if generate_gn_boss_structures == True:
+		if generate_gn_boss_structures:
 			print("Generating structure pool using Gn-Boss ML model")
 			o.write("\nGenerating structure pool using Gn-Boss ML model\n")
 
-			if clear_previous_gn_structures == True:
+			if clear_previous_gn_structures:
 				if os.path.isdir("gn-boss"):
 					# os.chdir("gn-boss")
 					shutil.rmtree("gn-boss")  # clear out the previous run.
@@ -580,7 +549,7 @@ def run_fuse(
 					os.mkdir("gn-boss")
 					os.chdir("gn-boss")
 
-			if clear_previous_gn_structures != True:
+			if not clear_previous_gn_structures:
 				if not os.path.isdir("gn-boss"):
 					os.mkdir("gn-boss")
 					os.chdir("gn-boss")
@@ -652,7 +621,7 @@ def run_fuse(
 			# sys.exit()
 
 			# if required, go through and rank the structures
-			if rank_gn_structures != None:
+			if rank_gn_structures is not None:
 				os.chdir(path_to_structures)
 
 				r_cifs = glob.glob("*.cif")
@@ -671,7 +640,7 @@ def run_fuse(
 
 				# print(r_elements)
 				# sys.exit()
-				if assemble_spp_ == True:
+				if assemble_spp:
 					assemble_spp(r_elements, spp_path=spp_path)
 
 				print("Ranking structures from Gn-Boss ML model using SPPs")
@@ -808,7 +777,7 @@ def run_fuse(
 	# various write commands from FUSE107 carried over:
 	#############################################################################
 
-	print("Input formula = " + string + "\nMaximum number of formula units = " + str(max_fus))
+	print(f"Input formula = {string}\nMaximum number of formula units = {str(max_fus)}")
 	o.write("\nInput formula = " + string + "\nMaximum number of formula units = " + str(max_fus))
 	system_type_string = str(str(system_type) + " input formula")
 	print(system_type_string)
@@ -817,11 +786,11 @@ def run_fuse(
 	o.write("\nap calculated to be: " + str(ap) + " Angstroms")
 
 	#### check the search type to be used #######################################
-	if swap_searches == True:
+	if swap_searches:
 		print("Search routine: Mixed")
 		o.write("\nSearch routine: Mixed")
 
-	if swap_searches == False:
+	else:
 		if search == 1:
 			print("Search routine: Basin Hopping")
 			o.write("\nSearch routine: Basin Hopping")
@@ -842,7 +811,7 @@ def run_fuse(
 
 	# Only generate an initial population if we are starting a fresh calculation
 
-	if restart == False:
+	if not restart:
 		generation_complete = False
 		print("\n\n############################ Generating Initial Population ############################\n\n")
 		o.write("\n\n############################ Generating Initial Population ############################\n")
@@ -854,7 +823,7 @@ def run_fuse(
 		using_prebuilt = False
 		pre_built_used = 1.e20
 		# if flagged in input file, go and find the pre-built structures and how many of them there are
-		if read_exisiting_structures == True:
+		if read_exisiting_structures:
 			print("Looking for user supplied structures")
 			o.write("\nLooking for user supplied structures")
 			os.chdir(path_to_structures)
@@ -863,12 +832,12 @@ def run_fuse(
 
 			if len(cifs) > 0:
 				# if we want to pull structures in a random order do this:
-				if pull_random == True:
+				if pull_random:
 					# shuffle the order in which the cifs are read in, so that if we have more reference structures than we can use in the initial population, they are drawn in a random order, with the remainder retained for later
 					random.shuffle(cifs)
 
 				# if we want to pull pre-built structures by an energy ranking from spps.
-				elif pull_spp_rank == True:
+				elif pull_spp_rank:
 					spp_ranks = {'file': [], 'energy': []}
 					csvs = glob.glob("*.csv")
 					for i in csvs:
@@ -963,9 +932,13 @@ def run_fuse(
 						temp_structure['source'] = 'None'
 					except(TypeError):
 						reject = True
-
-					if reject == True:
+					if reject:
 						os.remove(i)
+
+					# if we haven't found a reason to reject the structure, add it to the pool of pre_build structures, and flag that it hasn't been used yet
+					else:
+						pre_built_structures[i] = {'structure': temp, 'used?': False, 'file': i}
+
 
 					# if use_spglib == True:
 					#	try:
@@ -974,13 +947,9 @@ def run_fuse(
 					#		temp2.cell=lattice
 					#		temp2.set_scaled_positions(positions)
 					#		temp=temp2.copy()
-					#		
+					#
 					#	except:
 					#		pass
-
-					# if we haven't found a reason to reject the structure, add it to the pool of pre_build structures, and flag that it hasn't been used yet
-					if reject == False:
-						pre_built_structures[i] = {'structure': temp, 'used?': False, 'file': i}
 
 				if len(list(pre_built_structures.keys())) == 1:
 					print("... successfully read ", str(len(list(pre_built_structures.keys()))), " structure")
@@ -1206,14 +1175,27 @@ def run_fuse(
 		if ctype == 'mixed':
 
 			try:
-				atoms, energy, converged = run_calculators(atoms=atoms, vasp_opts=
-				vasp_opts, kcut=kcut, produce_steps=None, shel=shel,
-				                                           kwds=kwds, gulp_opts=gulp_opts, lib=lib, calcs=calcs,
-				                                           dist_cutoff=dist_cutoff, qe_opts=qe_opts,
-				                                           gulp_command=gulp_command, gulp_timeout=gulp_timeout,
-				                                           n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts,
-				                                           opt_class=opt_class,
-				                                           opt_device=opt_device, mode=mode)
+				atoms, energy, converged = run_calculators(
+					atoms=atoms,
+					vasp_opts=vasp_opts,
+					kcut=kcut,
+					produce_steps=None,
+					shel=shel,
+					kwds=kwds,
+					gulp_opts=gulp_opts,
+					lib=lib,
+					calcs=calcs,
+					dist_cutoff=dist_cutoff,
+					qe_opts=qe_opts,
+					gulp_command=gulp_command,
+					gulp_timeout=gulp_timeout,
+					n_opts=n_opts,
+					rel=rel,
+					relaxer_opts=relaxer_opts,
+					opt_class=opt_class,
+					opt_device=opt_device,
+					mode=mode,
+				)
 
 			except:
 				converged = False
@@ -1765,7 +1747,7 @@ def run_fuse(
 				pickle.dump(using_prebuilt, open("using_prebuilt.p", 'wb'))
 				try:
 					pickle.dump(pre_built_structures, open("pre_built_structures.p", 'wb'))
-				except:
+				except FileNotFoundError:
 					pass
 				pickle.dump(r, open("r.p", 'wb'))
 				pickle.dump(ca, open("ca.p", 'wb'))
@@ -1813,7 +1795,7 @@ def run_fuse(
 	# copy the graph output file to the main directory
 	try:
 		shutil.copy("restart/graph_output.csv", ".")
-		if output_graph_at_end == True:
+		if output_graph_at_end:
 			plot_graph(search=1)
 	except:
 		pass
@@ -1888,6 +1870,7 @@ def cal_ideal_density(bondtable: dict, fu) -> float:
 
 	ideal_density = mass / volume
 	return ideal_density
+
 
 # next things to do:
 
