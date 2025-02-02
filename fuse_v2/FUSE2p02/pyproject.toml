@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fuse202"
+dynamic = ["version"]
+authors = [
+    { name="Chris Collins", email="c.m.collins@liverpool.ac.uk"}
+]
+
+description = "Flexible Unit Structure Engine crystal structure prediction code"
+
+requires-python = ">=3.11"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+packages = [{include = "fuse202"}]
