@@ -47,8 +47,16 @@ def timeout(timeout):
 	return deco
 
 
-def run_gulp(atoms='', shel=None, kwds='', opts='', lib='', produce_steps='',
-             gulp_command='gulp < gulp.gin > gulp.got', gulp_timeout=''):
+def run_gulp(
+		atoms='',
+		shel=None,
+		kwds='',
+		opts='',
+		lib='',
+		produce_steps='',
+		gulp_command='gulp < gulp.gin > gulp.got',
+		gulp_timeout=''
+):
 	iat = len(atoms)
 	sleeptime = 10
 	converged = False

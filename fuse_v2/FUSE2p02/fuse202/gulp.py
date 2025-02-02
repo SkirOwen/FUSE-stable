@@ -5,7 +5,15 @@ Atoms object in GULP format.
 """
 
 import os
+import ase
 from ase.geometry import *
+from ase import Atoms, Atom
+from ase.constraints import FixAtoms, FixScaled
+from ase.data import chemical_symbols
+from ase.spacegroup import crystal
+import numpy as np
+from ase.calculators.singlepoint import SinglePointCalculator
+
 
 
 def read_gulp(filename='ase-gulp.gin'):
@@ -14,12 +22,6 @@ def read_gulp(filename='ase-gulp.gin'):
 	Reads unitcell, atom positions, charges, atom types
 	Note: Constraints not currently supported
 	"""
-
-	from ase import Atoms, Atom
-	from ase.constraints import FixAtoms, FixScaled
-	from ase.data import chemical_symbols
-	from ase.spacegroup import crystal
-	import numpy as np
 
 	if isinstance(filename, str):
 		f = open(filename)
@@ -44,12 +46,18 @@ def read_gulp(filename='ase-gulp.gin'):
 	for n, line in enumerate(data):
 		if line.lstrip()[0:4] == 'vect':
 			for i in range(3):
-				cell.append([float(data[n + i + 1].split()[0]),
-				             float(data[n + i + 1].split()[1]),
-				             float(data[n + i + 1].split()[2])])
+				cell.append(
+					[
+						float(data[n + i + 1].split()[0]),
+						float(data[n + i + 1].split()[1]),
+						float(data[n + i + 1].split()[2]),
+					]
+				)
 			cell = np.array(cell)
+
 			if len(line.split()) > 1 and line.split()[1] == 'au':
 				cell = cell * ase.units.Bohr
+
 		if line.lstrip()[0:4] == 'cell':
 			matrix = False
 			if len(line.split()) > 2:
@@ -165,10 +173,7 @@ def read_gulp_out(filename='ase-gulp.gout'):
 	  there is only one structure in the input file
 	- does not (yet) read any constraints
 	"""
-	import os
-	import numpy as np
-	from ase.calculators.singlepoint import SinglePointCalculator
-	from ase import Atoms, Atom
+
 
 	if isinstance(filename, str):
 		f = open(filename)

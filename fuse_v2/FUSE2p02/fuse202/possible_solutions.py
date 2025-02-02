@@ -2,6 +2,7 @@ import glob
 import os
 import pickle
 import platform
+from collections import defaultdict
 
 from fuse202.config import SOLUTIONS_DIR
 
@@ -32,7 +33,7 @@ def orthorhombic_function(x, w, z):
 # 			temp = glob.glob("*.p")
 # 			for i in range(len(temp)):
 # 				os.remove(temp[i])
-# 		if platform.system == 'Linux':
+# 		if platform.system in ['Linux', "darwin"] :
 # 			os.system("rm *.p")
 #
 # 	def load_or_generate(filename: str, generator_func):

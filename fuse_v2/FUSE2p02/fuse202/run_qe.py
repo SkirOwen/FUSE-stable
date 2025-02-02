@@ -1,6 +1,6 @@
 import glob
 import math
-import numpy
+import numpy as np
 import os
 import re
 ##########################################################################################
@@ -9,20 +9,20 @@ import sys
 from ase import *
 from ase.calculators.espresso import Espresso
 from ase.io import read, write
-from numpy import arccos, pi, dot
-from numpy.linalg import norm
+
+
 
 
 def cellpar(atoms):
 	cell = atoms.cell
-	a = norm(cell[0])
-	b = norm(cell[1])
-	c = norm(cell[2])
-	alpha = arccos(dot(cell[1], cell[2]) / (b * c)) * 180. / pi
-	beta = arccos(dot(cell[0], cell[2]) / (a * c)) * 180. / pi
-	gamma = arccos(dot(cell[0], cell[1]) / (a * b)) * 180. / pi
+	a = np.linalg.norm(cell[0])
+	b = np.linalg.norm(cell[1])
+	c = np.linalg.norm(cell[2])
 
-	cell = []
+	alpha = np.arccos(np.dot(cell[1], cell[2]) / (b * c)) * 180. / np.pi
+	beta = np.arccos(np.dot(cell[0], cell[2]) / (a * c)) * 180. / np.pi
+	gamma = np.arccos(np.dot(cell[0], cell[1]) / (a * b)) * 180. / np.pi
+
 	cell = [a, b, c, alpha, beta, gamma]
 	return cell
 
@@ -54,9 +54,11 @@ def run_qe(atoms='', qe_opts='', kcut='', produce_steps=''):
 			temp_kcut = kcut
 		cell = new_atoms.get_cell_lengths_and_angles()
 		kp = []
-		kp = (int(math.ceil(temp_kcut / cell[0])),
-		      int(math.ceil(temp_kcut / cell[1])),
-		      int(math.ceil(temp_kcut / cell[2])))
+		kp = (
+			int(math.ceil(temp_kcut / cell[0])),
+			int(math.ceil(temp_kcut / cell[1])),
+			int(math.ceil(temp_kcut / cell[2]))
+		)
 		calc = qe_opts[str(list(qe_opts.keys())[i])]
 		calc.set(kpts=kp)
 		calc = qe_opts[str(list(qe_opts.keys())[i])]
