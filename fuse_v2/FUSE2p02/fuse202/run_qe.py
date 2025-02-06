@@ -13,7 +13,7 @@ from ase.io import read, write
 from fuse202.constant import Ry_TO_eV
 
 
-def cellpar(atoms):
+def cellpar(atoms: Atoms) -> tuple:
 	cell = atoms.cell
 	a = np.linalg.norm(cell[0])
 	b = np.linalg.norm(cell[1])
