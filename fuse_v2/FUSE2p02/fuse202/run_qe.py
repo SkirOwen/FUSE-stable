@@ -72,7 +72,6 @@ def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
 
 		calc = qe_opts[str(list(qe_opts.keys())[i])]
 		calc.set(kpts=kp)
-		calc = qe_opts[str(list(qe_opts.keys())[i])]
 		new_atoms.set_calculator(calc)
 		try:
 			energy = new_atoms.get_potential_energy()
