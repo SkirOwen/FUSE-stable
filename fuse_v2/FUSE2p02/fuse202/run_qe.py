@@ -1,4 +1,5 @@
 import glob
+import shutil
 import math
 import numpy as np
 import os
@@ -26,22 +27,37 @@ def cellpar(atoms: Atoms) -> tuple:
 	return a, b, c, alpha, beta, gamma
 
 
-def check_convergence(output_file=''):
+def check_convergence(output_file: str = "") -> bool:
+
+	# Assuming file exists
+	with open(output_file, "r") as f:
+		lines = f.readlines()
+
 	converged = False
-	lines = open(output_file, 'r').readlines()
-	if '   JOB DONE.\n' not in lines:
+
+	if not any("JOB DONE." in line for line in lines):
 		converged = False
-		return converged
-	if ('nstep' in j for j in lines):
+
+	if any('nstep' in line for line in lines):
 		if 'A final scf calculation at the relaxed structure.' in lines:
 			converged = True
-	elif ('nstep' not in j for j in lines):
-		if ('convergence has been achieved' in j for j in lines):
+	elif not any('nstep' in line for line in lines):
+		if any('convergence has been achieved' in line for line in lines):
 			converged = True
+
 	return converged
 
 
-def run_qe(atoms='', qe_opts='', kcut='', produce_steps=''):
+def remove_temp_files(pattern: str = "pwscf*") -> None:
+	""""""
+	for filename in glob.glob(pattern):
+		if os.path.isdir(filename):
+			shutil.rmtree(filename)
+		else:
+			os.remove(filename)
+
+
+def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
 	new_atoms = atoms.copy()
 	for i in range(len(list(qe_opts.keys()))):
 		if len(kcut) >= 2:
@@ -69,11 +85,9 @@ def run_qe(atoms='', qe_opts='', kcut='', produce_steps=''):
 			write(label, new_atoms)
 
 		# remove any output / tempory files before starting"
-		old_files = glob.glob("pwscf*")
-		for k in range(len(old_files)):
-			os.system("rm -r " + str(old_files[k]))
+		remove_temp_files(pattern="pwscf*")
 
-	converged = check_convergence('espresso.pwo')
+	converged = check_convergence("espresso.pwo")
 	#    print("converged:" +str(converged)+str("\n\n"))
 
 	temp_atoms = new_atoms.repeat([2, 2, 2])
