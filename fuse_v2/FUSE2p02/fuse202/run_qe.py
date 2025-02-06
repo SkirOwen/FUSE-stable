@@ -59,18 +59,17 @@ def remove_temp_files(pattern: str = "pwscf*") -> None:
 
 def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
 	new_atoms = atoms.copy()
+	converged = False
+
 	for i in range(len(list(qe_opts.keys()))):
 		if len(kcut) >= 2:
 			temp_kcut = kcut[i]
 		else:
 			temp_kcut = kcut
-		cell = new_atoms.get_cell_lengths_and_angles()
-		kp = []
-		kp = (
-			int(math.ceil(temp_kcut / cell[0])),
-			int(math.ceil(temp_kcut / cell[1])),
-			int(math.ceil(temp_kcut / cell[2]))
-		)
+		cell_length = new_atoms.get_cell_lengths_and_angles()
+
+		kp = tuple(int(math.ceil(temp_kcut / length)) for length in cell_length)
+
 		calc = qe_opts[str(list(qe_opts.keys())[i])]
 		calc.set(kpts=kp)
 		calc = qe_opts[str(list(qe_opts.keys())[i])]
@@ -80,8 +79,9 @@ def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
 		except:
 			converged = False
 			energy = 1.e20
-		if produce_steps == True:
-			label = str('atoms' + str(i + 1) + '.cif')
+
+		if produce_steps:
+			label = f"atoms_{i + 1}.cif"
 			write(label, new_atoms)
 
 		# remove any output / tempory files before starting"
@@ -91,13 +91,19 @@ def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
 	#    print("converged:" +str(converged)+str("\n\n"))
 
 	temp_atoms = new_atoms.repeat([2, 2, 2])
-	temp1 = temp_atoms.get_all_distances()
-	temp2 = []
-	for i in range(len(temp1)):
-		for j in range(len(temp1[i])):
-			if temp1[i][j] != 0:
-				temp2.append(temp1[i][j])
-	if min(temp2) <= 1.2:
+	distances = temp_atoms.get_all_distances()
+	nonzero_distances = []
+
+	# # why not np.nonzero
+	# nonzero_distances = nonzero_distances[distances > 1e-8]
+	# if nonzero_distances.size > 0 and np.min(nonzero_distances) <= 1.2:
+	# 	converged = False
+
+	for i in range(len(distances)):
+		for j in range(len(distances[i])):
+			if distances[i][j] != 0:
+				nonzero_distances.append(distances[i][j])
+	if min(nonzero_distances) <= 1.2:
 		converged = False
 
 	# convert from Ry to eV
