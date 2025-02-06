@@ -23,11 +23,7 @@ def cellpar(atoms):
 	beta = np.arccos(np.dot(cell[0], cell[2]) / (a * c)) * 180. / np.pi
 	gamma = np.arccos(np.dot(cell[0], cell[1]) / (a * b)) * 180. / np.pi
 
-	cell = [a, b, c, alpha, beta, gamma]
-	return cell
-
-
-##########################################################################################
+	return a, b, c, alpha, beta, gamma
 
 
 def check_convergence(output_file=''):
