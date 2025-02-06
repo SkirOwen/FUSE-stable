@@ -10,7 +10,7 @@ from ase import *
 from ase.calculators.espresso import Espresso
 from ase.io import read, write
 
-
+from fuse202.constant import Ry_TO_eV
 
 
 def cellpar(atoms):
@@ -90,7 +90,9 @@ def run_qe(atoms='', qe_opts='', kcut='', produce_steps=''):
 	if min(temp2) <= 1.2:
 		converged = False
 
-	energy = energy / 13.6056980659  # convert from Ry to eV
+	# convert from Ry to eV
+	energy = energy / Ry_TO_eV
+
 	return new_atoms, energy, converged
 
 # qe_opts={
