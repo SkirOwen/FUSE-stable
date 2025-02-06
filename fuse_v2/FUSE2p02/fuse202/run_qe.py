@@ -75,7 +75,8 @@ def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
 		new_atoms.set_calculator(calc)
 		try:
 			energy = new_atoms.get_potential_energy()
-		except:
+		except RuntimeError as e:
+			print(f"Error calculating the potential energy: {e}")
 			converged = False
 			energy = 1.e20
 
