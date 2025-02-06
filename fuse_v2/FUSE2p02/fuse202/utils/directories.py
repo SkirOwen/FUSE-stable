@@ -1,6 +1,18 @@
 from __future__ import annotations
 
 import os
+import shutil
+
+from fuse202.config import get_fuse202_dir
+
+
+def cache_solutions_dir():
+	return guarantee_existence(os.path.join(cache_dir(), "solutions"))
+
+
+def cache_dir():
+	"""./cache"""
+	return guarantee_existence(os.path.join(get_fuse202_dir(), "cache"))
 
 
 def guarantee_existence(path: str) -> str:
@@ -16,6 +28,12 @@ def guarantee_existence(path: str) -> str:
 	str
 		The absolute path.
 	"""
-	if not os.path.exists(path):
-		os.makedirs(path)
+	os.makedirs(path, exist_ok=True)
 	return os.path.abspath(path)
+
+
+def guarantee_empty_existence(path: str) -> str:
+	if os.path.exists(path):
+		shutil.rmtree(str(path))
+	os.makedirs(path, exist_ok=True)
+	return os.path.realpath(path, strict=True)
