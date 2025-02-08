@@ -57,26 +57,28 @@ def remove_temp_files(pattern: str = "pwscf*") -> None:
 			os.remove(filename)
 
 
-def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps=''):
+def run_qe(atoms: Atoms, qe_opts: dict, kcut, produce_steps='') -> tuple:
 	new_atoms = atoms.copy()
 	converged = False
 
-	for i in range(len(list(qe_opts.keys()))):
+	for i, (key, calc) in enumerate(qe_opts.items()):
 		if len(kcut) >= 2:
 			temp_kcut = kcut[i]
 		else:
 			temp_kcut = kcut
+
 		cell_length = new_atoms.get_cell_lengths_and_angles()
 
-		kp = tuple(int(math.ceil(temp_kcut / length)) for length in cell_length)
+		kp = tuple(
+			int(math.ceil(temp_kcut / length)) for length in cell_length
+		)
 
-		calc = qe_opts[str(list(qe_opts.keys())[i])]
 		calc.set(kpts=kp)
-		calc = qe_opts[str(list(qe_opts.keys())[i])]
 		new_atoms.set_calculator(calc)
 		try:
 			energy = new_atoms.get_potential_energy()
-		except:
+		except RuntimeError as e:
+			print(f"Error calculating the potential energy: {e}")
 			converged = False
 			energy = 1.e20
 
