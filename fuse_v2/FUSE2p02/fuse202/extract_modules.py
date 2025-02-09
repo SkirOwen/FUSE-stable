@@ -98,28 +98,59 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 				mod.cell = sub_module_cell
 
 				for k in i:
-					# print(k)
 					sp = k.scaled_position
-					if sp[0] >= co_ords[0][0]:
-						if sp[0] < co_ords[0][1]:
-							if sp[1] >= co_ords[1][0]:
-								if sp[1] < co_ords[1][1]:
-									if sp[2] >= co_ords[2][0]:
-										if sp[2] < co_ords[2][1]:
-											# before we put it into the sub module, need to work out what the co-ordiates should be relative to the origin of the sub-mod
-											zero_point = [cell[0] * co_ords[0][0], cell[1] * co_ords[1][0],
-											              cell[2] * co_ords[2][0]]
-											pos = k.position - zero_point
-											# work out the new position as a fraction of the co-ordinate range we're looking at
-											rng = [(co_ords[0][1] - co_ords[0][0]) * cell[0],
-											       (co_ords[1][1] - co_ords[1][0]) * cell[1],
-											       (co_ords[2][1] - co_ords[2][0]) * cell[2]]
-											pos = [pos[0] / rng[0], pos[1] / rng[1], pos[2] / rng[2]]
-											new_pos = [pos[0] * sub_module_cell[0], pos[1] * sub_module_cell[1],
-											           pos[2] * sub_module_cell[2]]
-											k.position = new_pos
+					# Check that sp is within the bounds for each dimension.
+					if all(co_ords[d][0] <= sp[d] < co_ords[d][1] for d in range(3)):
+						# Determine the zero point relative to the sub-module's origin.
+						zero_point = [cell[d] * co_ords[d][0] for d in range(3)]
+						# Adjust k.position relative to the zero point.
+						pos = [k.position[d] - zero_point[d] for d in range(3)]
+						# Calculate the range for each dimension.
+						rng = [(co_ords[d][1] - co_ords[d][0]) * cell[d] for d in range(3)]
+						# Normalise the position within the specified coordinate range.
+						normalised_pos = [pos[d] / rng[d] for d in range(3)]
+						# Scale the normalised position to the sub-module cell dimensions.
+						new_pos = [normalised_pos[d] * sub_module_cell[d] for d in range(3)]
+						k.position = new_pos
 
-											mod = mod + k
+						mod = mod + k
+				#
+				# for k in i:
+				# 	# print(k)
+				# 	sp = k.scaled_position
+				# 	if sp[0] >= co_ords[0][0]:
+				# 		if sp[0] < co_ords[0][1]:
+				# 			if sp[1] >= co_ords[1][0]:
+				# 				if sp[1] < co_ords[1][1]:
+				# 					if sp[2] >= co_ords[2][0]:
+				# 						if sp[2] < co_ords[2][1]:
+				# 							# before we put it into the sub module, need to work out what the co-ordiates should be relative to the origin of the sub-mod
+				# 							zero_point = [
+				# 								cell[0] * co_ords[0][0],
+				# 								cell[1] * co_ords[1][0],
+				# 								cell[2] * co_ords[2][0]
+				# 							]
+				# 							pos = k.position - zero_point
+				#
+				# 							# work out the new position as a fraction of the co-ordinate range we're looking at
+				# 							rng = [
+				# 								(co_ords[0][1] - co_ords[0][0]) * cell[0],
+				# 								(co_ords[1][1] - co_ords[1][0]) * cell[1],
+				# 								(co_ords[2][1] - co_ords[2][0]) * cell[2],
+				# 							]
+				# 							pos = [
+				# 								pos[0] / rng[0],
+				# 								pos[1] / rng[1],
+				# 								pos[2] / rng[2],
+				# 							]
+				# 							new_pos = [
+				# 								pos[0] * sub_module_cell[0],
+				# 								pos[1] * sub_module_cell[1],
+				# 								pos[2] * sub_module_cell[2],
+				# 							]
+				# 							k.position = new_pos
+				#
+				# 							mod = mod + k
 
 				# 3. need to reset the co-ordinates within the module to be within the sub-module
 
