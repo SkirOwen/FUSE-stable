@@ -1,6 +1,7 @@
 import numpy
 import sys
-from ase import *
+from ase import Atoms
+from ase.io import write
 from ase.visualize import *
 
 
@@ -10,36 +11,56 @@ from ase.visualize import *
 # charges = [3,4,2]
 # ap = 4.95
 
-# lib={'Y':{3:[6,9]},'Ti':{4:[4,8]},'Ba':{2:[6,12]}} # start of information from shannon database, format = 1st key: atomic symbol, 2nd key(s): charge states, then list containing min bonds then max bonds
 
-def test_bonds(atoms='', cations='', anions='', charges='', ap='', lib='', system_type='', count_bonds=False):
+lib = {
+	'Y': {3: [6, 9]},
+	'Ti': {4: [4, 8]},
+	'Ba': {2: [6, 12]}
+}
+# start of information from shannon database,
+# format = 1st key: atomic symbol, 2nd key(s): charge states, then list containing min bonds then max bonds
+
+
+def test_bonds(
+		atoms,
+		cations: list,
+		anions: list,
+		charges,
+		ap,
+		lib: dict[str, dict[int, list[int, int]]],
+		system_type='',
+		count_bonds=False
+):
 	if system_type == 'ionic':
-		anion_rad = []
 		# print(anions)
-		for i in range(len(anions)):
-			temp = lib[anions[i]]
-			keys = list(temp.keys())
-			if len(temp) == 1:
-				anion_rad.append(temp[keys[0]][-1])
-			if len(temp) > 1:
-				for j in range(len(temp)):
-					anion_rad.append(temp[keys[j]][-1])
-		anion_rad = max(anion_rad)
+		anion_rad = [v[-1] for anion in anions for v in lib[anion].values()]
+		# anion_rad = []
+		# for anion in anions:
+		# 	temp = lib[anion]
+		# 	keys = list(temp.keys())
+		# 	if len(temp) == 1:
+		# 		anion_rad.append(temp[keys[0]][-1])
+		# 	if len(temp) > 1:
+		# 		for j in range(len(temp)):
+		# 			anion_rad.append(temp[keys[j]][-1])
 		# count_bonds=True
-		if count_bonds == True:
+
+		anion_rad = max(anion_rad)
+		if count_bonds:
 			print("########## Starting structure ##########")
 			print("number of atoms: ", str(len(atoms)))
 		ci = []
 		ai = []
 		# atoms.rattle(0.025)
-		for i in range(len(atoms)):
-			if atoms[i].symbol in cations:
+		for i, atom in enumerate(atoms):
+			if atom.symbol in cations:
 				ci.append(i)
 
 		atoms = atoms.repeat([2, 2, 2])
-		for i in range(len(atoms)):
-			if atoms[i].symbol in anions:
+		for i, atom in enumerate(atoms):
+			if atom.symbol in anions:
 				ai.append(i)
+
 		wrong = 0
 		for i in range(len(ci)):
 			cat = atoms[ci[i]]
@@ -61,7 +82,7 @@ def test_bonds(atoms='', cations='', anions='', charges='', ap='', lib='', syste
 
 			# bond_dist=(data[-1]+anion_rad)*1.25
 			bond_dist = ap * 0.785
-			if count_bonds == True:
+			if count_bonds:
 				print("bond_distance ", str(bond_dist))
 			nbonds = 0
 			temp1 = list(atoms.get_distances(ci[i], ai, mic=True))
@@ -70,7 +91,8 @@ def test_bonds(atoms='', cations='', anions='', charges='', ap='', lib='', syste
 				temp1.remove(0.)
 			except:
 				pass
-			###### to restore the bond test used in v. 1.02 chage the distance comparison to: if temp1[j] <= ap*0.785
+
+			# to restore the bond test used in v. 1.02 change the distance comparison to: if temp1[j] <= ap*0.785
 			for j in range(len(temp1)):
 				if temp1[j] <= bond_dist:
 					nbonds += 1
@@ -103,17 +125,17 @@ def test_bonds(atoms='', cations='', anions='', charges='', ap='', lib='', syste
 				data = [min(min_bonds), max(max_bonds), sum(radius) / len(radius)]
 				br = list(range(data[0] - 1, data[1] + 2))
 			# print(data)
-			if count_bonds == True:
+			if count_bonds:
 				print(cat.symbol, " ", nbonds)
-			if not nbonds in br:
+			if nbonds not in br:
 				wrong += 1
 		# print ("total errors", wrong)
-		if count_bonds == True:
+		if count_bonds:
 			write("test_structure.cif", atoms)
 		# sys.exit()
 		try:
 			return float(wrong) / float(len(ci))
-		except:
+		except ZeroDivisionError:
 			return 1.
 
 	if system_type == 'neutral':
@@ -148,14 +170,14 @@ def test_bonds(atoms='', cations='', anions='', charges='', ap='', lib='', syste
 			data = [min(min_bonds), max(max_bonds), sum(radius) / len(radius)]
 			br = list(range(data[0] - 1, data[1] + 2))
 			# print cat.symbol, " ",nbonds
-			if not nbonds in br:
+			if nbonds not in br:
 				wrong += 1
 		# print ("total errors", wrong)
 		# write("test_structure.cif",atoms)
 		# sys.exit()
 		try:
 			return float(wrong) / float(len(ci))
-		except:
+		except ZeroDivisionError:
 			return 1.
 
 # wrong_fract=test_bonds(atoms=atoms,cations=cations,anions=anions,charges=charges,ap=ap,lib=lib)
