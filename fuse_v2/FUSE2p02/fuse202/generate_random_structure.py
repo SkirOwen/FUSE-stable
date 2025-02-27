@@ -7,22 +7,36 @@ from fuse202.create_random_string import *
 from fuse202.error_check_structure import *
 
 
-def generate_random_structure(target_atoms, cubic_solutions, tetragonal_solutions, hexagonal_solutions,
-                              orthorhombic_solutions,
-                              monoclinic_solutions, atoms_per_fu, ideal_density, density_cutoff, check_bonds, btol,
-                              system_type, fu, composition, bondtable, ap, check_distances, dist_cutoff,
-                              vac_ratio='', max_fus='',
-                              target_number_atoms=''):
+def generate_random_structure(
+		target_atoms,
+		cubic_solutions,
+		tetragonal_solutions,
+		hexagonal_solutions,
+		orthorhombic_solutions,
+		monoclinic_solutions,
+		atoms_per_fu,
+		ideal_density,
+		density_cutoff,
+		check_bonds,
+		btol,
+		system_type,
+		fu,
+		composition,
+		bondtable,
+		ap,
+		check_distances,
+		dist_cutoff,
+		vac_ratio='',
+		max_fus='',
+		target_number_atoms=''
+):
 	accept = 0
 	n_atoms = 0
 	complete = False
 	max_attempts = 1000
 	attempts = 0
 
-	# print(cubic_solutions)
-	# sys.exit()
-
-	while complete == False:
+	while not complete:
 		# print(attempts)
 		# try:
 		# print("\nstart")
@@ -42,10 +56,20 @@ def generate_random_structure(target_atoms, cubic_solutions, tetragonal_solution
 		# print("ap: ",ap)
 
 		try:
-			string, instructions = create_random_string(cubic_solutions, tetragonal_solutions, hexagonal_solutions,
-			                                            orthorhombic_solutions, monoclinic_solutions, atoms_per_fu, fu,
-			                                            vac_ratio=vac_ratio, max_fus=max_fus, system_type=system_type,
-			                                            composition=composition, ap=ap)
+			string, instructions = create_random_string(
+				cubic_solutions,
+				tetragonal_solutions,
+				hexagonal_solutions,
+				orthorhombic_solutions,
+				monoclinic_solutions,
+				atoms_per_fu,
+				fu,
+				vac_ratio=vac_ratio,
+				max_fus=max_fus,
+				system_type=system_type,
+				composition=composition,
+				ap=ap
+			)
 		except:
 			continue
 		# check to see if it has the correct number of atoms
