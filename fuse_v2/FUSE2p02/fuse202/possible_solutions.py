@@ -4,7 +4,7 @@ import pickle
 import platform
 from collections import defaultdict
 
-from fuse202.config import SOLUTIONS_DIR
+from fuse202.constant import SOLUTIONS_DIR
 
 
 def return_factors(n: int) -> set:
@@ -207,7 +207,7 @@ class CrystalSolutionsCalculator:
 		return cubic, tetragonal, hexagonal, orthorhombic, monoclinic
 
 
-def possible_solutions(max_ax: int, restart: bool = False) -> tuple[dict, ...]:
+def calculate_possible_solutions(max_ax: int, restart: bool = False) -> tuple[dict, ...]:
 	"""
 	Calculate possible solutions for various crystal systems.
 
