@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 
-
 from fuse202.utils.directories import cache_solutions_dir
 
 SPP_PATH = r'C:\Users\cc0u5\Documents\SPP_library\SPP'
