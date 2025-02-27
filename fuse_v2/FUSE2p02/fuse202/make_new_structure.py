@@ -12,13 +12,33 @@ from fuse202.possible_solutions import *
 from random import choice
 
 
-def get_new_structure(composition='', max_atoms='', imax_atoms='', restart='',
-                      max_ax='', density_cutoff='', check_bonds='', btol='', check_distances='',
-                      system_type='', dist_cutoff='', vac_ratio='', atoms_per_fu='', imax_fus='',
-                      max_fus='', cubic_solutions='', tetragonal_solutions='', hexagonal_solutions='',
-                      orthorhombic_solutions='', monoclinic_solutions='', bondtable='',
-                      ideal_density='', fu='', ap='', use_spglib=''
-                      ):
+def get_new_structure(
+		composition='',
+		max_atoms='',
+		imax_atoms='',
+		restart='',
+		max_ax='',
+		density_cutoff='',
+		check_bonds='',
+		btol='',
+		check_distances='',
+		system_type='',
+		dist_cutoff='',
+		vac_ratio='',
+		atoms_per_fu='',
+		imax_fus='',
+		max_fus='',
+		cubic_solutions='',
+		tetragonal_solutions='',
+		hexagonal_solutions='',
+		orthorhombic_solutions='',
+		monoclinic_solutions='',
+		bondtable='',
+		ideal_density='',
+		fu='',
+		ap='',
+		use_spglib='',
+):
 	gen = False
 	while gen == False:
 		##############################################################################
@@ -26,21 +46,34 @@ def get_new_structure(composition='', max_atoms='', imax_atoms='', restart='',
 		# for each iteration of generating n structures:
 		target_fu = choice(list(range(1, imax_fus + 1)))
 		target_atoms = target_fu * atoms_per_fu
-		# print("hello")
-		# print(target_fu)
-		# print(target_atoms)
-		atoms, string, instructions, accept = generate_random_structure(target_atoms, cubic_solutions,
-		                                                                tetragonal_solutions, hexagonal_solutions,
-		                                                                orthorhombic_solutions, monoclinic_solutions,
-		                                                                atoms_per_fu, ideal_density, density_cutoff,
-		                                                                check_bonds, btol, system_type, fu, composition,
-		                                                                bondtable, ap, check_distances, dist_cutoff,
-		                                                                vac_ratio=vac_ratio, max_fus=imax_fus,
-		                                                                target_number_atoms=target_atoms)
+
+		atoms, string, instructions, accept = generate_random_structure(
+			target_atoms,
+			cubic_solutions,
+			tetragonal_solutions,
+			hexagonal_solutions,
+			orthorhombic_solutions,
+			monoclinic_solutions,
+			atoms_per_fu,
+			ideal_density,
+			density_cutoff,
+			check_bonds,
+			btol,
+			system_type,
+			fu,
+			composition,
+			bondtable,
+			ap,
+			check_distances,
+			dist_cutoff,
+			vac_ratio=vac_ratio,
+			max_fus=imax_fus,
+			target_number_atoms=target_atoms,
+		)
 
 		##############################################################################
 		# now call write the atoms object to a temporary file & then call the extract modules function
-		if use_spglib == True:
+		if use_spglib:
 			import spglib
 			from ase import Atoms
 			try:
@@ -56,7 +89,7 @@ def get_new_structure(composition='', max_atoms='', imax_atoms='', restart='',
 			except:
 				pass
 
-		if not atoms == None:
+		if atoms is not None:
 			write("temp.cif", atoms)
 			input_files = ["temp.cif"]
 			structure = extract_module(input_files, bondtable)
