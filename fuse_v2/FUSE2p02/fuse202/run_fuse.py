@@ -5,6 +5,7 @@ import os
 import pickle
 import random
 import shutil
+
 import statistics
 import sys
 import time
@@ -24,12 +25,13 @@ from ase import Atoms
 from ase.io import *
 from ase.visualize import *
 from fuse202.assemble_spp import *
+from fuse202.bond_table import BOND_DATA
 from fuse202.extract_modules import *
 from fuse202.generate_random_structure import *
 from fuse202.make_basin_move import *
 from fuse202.make_new_structure import *
 from fuse202.plot_results import *
-from fuse202.possible_solutions import *
+from fuse202.possible_solutions import calculate_possible_solutions
 from fuse202.run_chgnet import *
 from fuse202.run_gulp import *
 from fuse202.run_multiple_calculators import run_calculators
@@ -185,6 +187,7 @@ def run_fuse(
 
 		# variables which need defining for the calculators
 		ctype='',  # calculator type to use: "gulp", "vasp", "qe", "mixed" (qe = Quantum Espresso)
+
 		# GULP:
 		kwds='',  # keywords needed for gulp input
 		gulp_opts='',  # options needed for gulp
@@ -195,6 +198,7 @@ def run_fuse(
 		calcs='',  # list to tell FUSE which calculators to use and in which order
 		assemble_spp_=False,  # if set to True, collate the spp potential library for the calculation
 		spp_path=None,  # path to spp potential libraries # FIXME
+
 		# VASP:
 		vasp_opts='',  # options for each Vasp calculation
 		kcut=30,
@@ -234,7 +238,7 @@ def run_fuse(
 	# processing parts of the input file
 	# number of structures we have performed geometry optimisation on during this run
 	itr = 0
-	# get atoms per formula unit
+	# get atoms per formula unit # TODO: counter??
 	atoms_per_fu = sum(composition.values())
 	# number of formula units in the initial population
 	imax_fus: int = imax_atoms // atoms_per_fu
@@ -242,13 +246,14 @@ def run_fuse(
 	max_fus: int = max_atoms // atoms_per_fu
 	# get possible unit cell sizes / shapes
 
-	solutions = possible_solutions(max_ax, restart)
+	solutions = calculate_possible_solutions(max_ax, restart)
 	cubic_solutions, tetragonal_solutions, hexagonal_solutions, orthorhombic_solutions, monoclinic_solutions = solutions
 
 	# load bond table data
 	# TODO: redo the bound table
-	bondtable = numpy.load("bondtable.npz", allow_pickle=True)
-	bondtable = bondtable['bond_table'].item()
+	# bondtable = numpy.load("bondtable.npz", allow_pickle=True)
+	# bondtable = bondtable['bond_table'].item()
+	bondtable = BOND_DATA
 
 	# set the original temperature value
 	T0 = T
@@ -268,19 +273,16 @@ def run_fuse(
 		assemble_spp(elements, spp_path=spp_path)
 
 	if max_fus == 0:
-		raise ValueError("maximum number of Fus is 0!, please increase maximum number of atoms in input!")
+		raise ValueError("Maximum number of Fus is 0!, please increase maximum number of atoms in input!")
 
 	if imax_fus == 0:
 		imax_fus = 1
 
 	# calculating ideal density###################################################
 
-	fu = []
-	for element, count in composition.items():
-		atomic_number = Atoms(element).get_atomic_numbers()[0]
-		fu.extend([atomic_number] * count)
+	fu = get_fu(composition)
 
-	ideal_density = cal_ideal_density(bondtable, fu)
+	ideal_density = cal_ideal_density(bondtable=bondtable, fu=fu)
 
 	# compute ap value
 	# compute the ap to be used for the sub-modules
@@ -291,7 +293,14 @@ def run_fuse(
 	# temp=numpy.load("bondtable.npz",allow_pickle=True)
 	# bond_table=temp['bond_table'].item()
 
-	ap = cal_ap(ap_scale, bondtable, fixed_ap, symbol_fu, system_type)
+	ap = cal_ap(
+		bondtable=bondtable,
+		symbol_fu=symbol_fu,
+		system_type=system_type,
+		ap_scale=ap_scale,
+		fixed_ap=fixed_ap,
+	)
+
 	#############################################################################
 
 	#### work out the normalised version of the input composition ############### 
@@ -329,8 +338,8 @@ def run_fuse(
 		# append to previous output.txt file
 		o = open("output.txt", 'a')
 		# check that the structures folder exisits
-		if not os.path.exists("structures"):
-			os.mkdir("structures")
+		# if not os.path.exists("structures"):
+		# 	os.mkdir("structures")
 		used_backup = False
 		try:
 			os.chdir("restart")
@@ -449,16 +458,16 @@ def run_fuse(
 		r = 0
 		# count since the last downhill move was made
 		ca = 0
-		# version of ca count used when determinig whether to switch between search rountines
+		# version of ca count used when determining whether to switch between search rountines
 		sa = 0
 		# create new output text file
 		o = open("output.txt", 'w')
-		# create a new dictionary to contain all of the relaxed energies
+		# create a new dictionary to contain all the relaxed energies
 		energies = {}
 		# default the search gen to true, set to false when there are structures to optimise:
 		search_generation_complete = True
 		# if search == 1 or 2, set the moves object to be the initial set.
-		if search == 1 or 2:
+		if search == 1 or search == 2:
 			moves = n_moves
 		# keep track of the moves that we've used:
 		used_moves = []
@@ -475,43 +484,33 @@ def run_fuse(
 			if not os.path.exists("structures"):
 				os.mkdir("structures")
 
-		# if glob.glob("structures/*.cif"):
-		# 	if platform.system() == 'Windows':
-		# 		os.system("del *.cif")
-		# 	if platform.system() == 'Linux':
-		# 		os.system("rm *.cif")
+		for file in glob.glob("structures/*.cif"):
+			os.remove(file)
+			# if platform.system() == 'Windows':
+			# 	os.system("del *.cif")
+			# if platform.system() == 'Linux':
+			# 	os.system("rm *.cif")
 
 
 		# check to see if there's a restart folder, if so, clear it
 		if not os.path.exists("restart"):
 			os.mkdir("restart")
-
 		to_remove = glob.glob("restart/*")
-		if platform.system() == 'Windows':
-			for i in to_remove:
-				os.remove(i)
-		if platform.system() == 'Linux':
-			# os.system("rm *")
-			pass
+		for i in to_remove:
+			os.remove(i)
 
 		# check to see if there is a backup directory, if so clear it
 		if not os.path.exists("backup"):
 			os.mkdir("backup")
-
 		to_remove = glob.glob("backup/*")
-		if platform.system() == 'Windows':
-			for i in to_remove:
-				if os.path.isfile(i):
-					os.remove(i)
+		for i in to_remove:
+			if os.path.isfile(i):
+				os.remove(i)
 
 			if os.path.exists("structures"):
 				to_remove2 = glob.glob("structures/*")
 				for i in to_remove2:
 					os.remove(i)
-
-		if platform.system() == 'Linux':
-			# os.system("rm -r *")
-			pass
 ##
 
 		# starting here, if it's been selected in the input file, go through and run gn-boss to generate starting structures
@@ -1000,18 +999,33 @@ def run_fuse(
 			# this section for the geneation of random structures 
 			#############################################################################
 			if using_prebuilt == False:
-				structure = get_new_structure(composition=composition,
-				                              max_atoms=max_atoms, imax_atoms=imax_atoms, restart=restart,
-				                              max_ax=max_ax,
-				                              density_cutoff=density_cutoff, check_bonds=check_bonds, btol=btol,
-				                              check_distances=check_distances, system_type=system_type,
-				                              dist_cutoff=dist_cutoff, vac_ratio=vac_ratio, atoms_per_fu=atoms_per_fu,
-				                              imax_fus=imax_fus, max_fus=max_fus, cubic_solutions=cubic_solutions,
-				                              tetragonal_solutions=tetragonal_solutions,
-				                              hexagonal_solutions=hexagonal_solutions,
-				                              orthorhombic_solutions=orthorhombic_solutions,
-				                              monoclinic_solutions=monoclinic_solutions, bondtable=bondtable,
-				                              ideal_density=ideal_density, fu=fu, ap=ap, use_spglib=use_spglib)
+				structure = get_new_structure(
+					composition=composition,
+					max_atoms=max_atoms,
+					imax_atoms=imax_atoms,
+					restart=restart,
+					max_ax=max_ax,
+					density_cutoff=density_cutoff,
+					check_bonds=check_bonds,
+					btol=btol,
+					check_distances=check_distances,
+					system_type=system_type,
+					dist_cutoff=dist_cutoff,
+					vac_ratio=vac_ratio,
+					atoms_per_fu=atoms_per_fu,
+					imax_fus=imax_fus,
+					max_fus=max_fus,
+					cubic_solutions=cubic_solutions,
+					tetragonal_solutions=tetragonal_solutions,
+					hexagonal_solutions=hexagonal_solutions,
+					orthorhombic_solutions=orthorhombic_solutions,
+					monoclinic_solutions=monoclinic_solutions,
+					bondtable=bondtable,
+					ideal_density=ideal_density,
+					fu=fu,
+					ap=ap,
+					use_spglib=use_spglib
+				)
 
 			# flag that the structure has not been optimised, and set energy to zero
 			structure['optimised?'] = False
@@ -1057,14 +1071,14 @@ def run_fuse(
 		generation_complete = False
 
 	# If we've restarted a calculation and continuing the initial population, print this to the output.
-	if restart == True:
-		if generation_complete == False:
+	if restart:
+		if not generation_complete:
 			print("\n\n############################ Resuming Initial Population ############################\n")
 			o.write("\n\n############################ Resuming Initial Population ############################\n")
 
 	# while we have iterations to do so, go through and continue optimising the initial population
 
-	while generation_complete == False:
+	while not generation_complete:
 		# first check to see if all are complete
 		ncomplete = 0
 		keys_to_complete = []
@@ -1806,7 +1820,7 @@ def run_fuse(
 			times.append(initial_population[x]['time'])
 
 	if len(times) > 0:
-		import statistics
+
 		mtime = round(statistics.mean(times), 1)
 		try:
 			stdevtime = round(statistics.stdev(times), 1)
@@ -1823,6 +1837,14 @@ def run_fuse(
 	# close the output file and exit
 	o.close()
 	sys.exit()
+
+
+def get_fu(composition: dict) -> list[int | float]:
+	fu = []
+	for element, count in composition.items():
+		atomic_number = Atoms(element).get_atomic_numbers()[0]
+		fu.extend([atomic_number] * count)
+	return fu
 
 
 def cal_ap(bondtable: dict, symbol_fu: list, system_type: str, ap_scale, fixed_ap) -> float:
@@ -1870,6 +1892,11 @@ def cal_ideal_density(bondtable: dict, fu) -> float:
 
 	ideal_density = mass / volume
 	return ideal_density
+
+
+class Fuse:
+	def __init__(self):
+		pass
 
 
 # next things to do:
