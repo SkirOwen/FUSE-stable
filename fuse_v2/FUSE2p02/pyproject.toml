@@ -4,17 +4,39 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fuse202"
-dynamic = ["version"]
+version = "2.02"
 authors = [
-    { name="Chris Collins", email="c.m.collins@liverpool.ac.uk"}
+    { name = "Chris Collins", email = "c.m.collins@liverpool.ac.uk" },
 ]
-
 description = "Flexible Unit Structure Engine crystal structure prediction code"
-
 requires-python = ">=3.11"
-readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-packages = [{include = "fuse202"}]
+dependencies = [
+    "ase>=3.23",
+    "numpy",
+    "pandas",
+    "spglib",
+    "func-timeout",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+ml = [
+    "chgnet",
+    "torch",
+    "pymatgen",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+include = ["fuse202*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
