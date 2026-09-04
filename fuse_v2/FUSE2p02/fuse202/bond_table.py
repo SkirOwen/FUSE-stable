@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 # bonding environments for neutral systems in FUSE, atomic radii used from VESTA version 3.4.8
 # format: 1st keys: element symbold, 2nd keys: oxidation state; values: 0 = min bond, 1 = max bond, 2= atomic radius
 # all CN numbers start from 1, upto either max in shannon table or  at least 12 if metallic radii
 import numpy as np
 
+from typing import TypeAlias
+
+Boundtable: TypeAlias = dict[str, dict[int, list[int, int, float]]]
+# type Boundtable = dict[str, dict[int, list[int, int, float]]]  # for python>=3.12
+
 BOND_TABLE_FILE = "bondtable.npz"
 
-BOND_DATA = {
+BOND_DATA: Boundtable = {
 	'H': {0: [1, 2, 0.46]},
 	'Li': {0: [4, 12, 1.57]},
 	'Be': {0: [3, 12, 1.12]},

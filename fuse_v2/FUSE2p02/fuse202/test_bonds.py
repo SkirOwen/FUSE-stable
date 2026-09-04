@@ -20,7 +20,7 @@ def _test_bonds(
 		anions: list,
 		charges,
 		ap,
-		lib: dict[str, dict[int, list[int, int]]],
+		lib: dict[str, dict[int, list[int, int, float]]],
 		system_type='',
 		count_bonds=False
 ):
@@ -167,7 +167,7 @@ def test_bonds(
 		anions: list[str],
 		charges: list[int],
 		ap: float,
-		lib: dict[str, dict[int, list[int, int]]],
+		lib: dict[str, dict[int, list[int, int, float]]],
 		system_type: Literal["ionic", "neutral"],
 		count_bonds: bool = False
 ) -> float:

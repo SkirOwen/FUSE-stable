@@ -2,22 +2,47 @@ import math
 import os
 import random
 import sys
+
 from ase.atoms import *
 from ase.io import *
 from ase.visualize import *
 from fuse202.assemble_structure_2 import *
 from fuse202.extract_modules import *
 from fuse202.make_new_structure import *
-from random import choice
 from random import shuffle
 
 
-def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion, ideal_density, density_cutoff,
-                    check_bonds, btol, system_type, fu, composition, check_distances, dist_cutoff,
-                    cubic_solutions, tetragonal_solutions, hexagonal_solutions, orthorhombic_solutions,
-                    monoclinic_solutions, max_atoms, max_ax,
-                    vac_ratio, using_prebuilt, pre_built_structures, max_fus, atoms_per_fu,
-                    imax_atoms, use_spglib, initial_population):
+def make_basin_move(
+		current_structure,
+		moves,
+		bondtable,
+		grid_spacing,
+		exclusion,
+		ideal_density,
+		density_cutoff,
+		check_bonds,
+		btol,
+		system_type,
+		fu,
+		composition,
+		check_distances,
+		dist_cutoff,
+		cubic_solutions,
+		tetragonal_solutions,
+		hexagonal_solutions,
+		orthorhombic_solutions,
+		monoclinic_solutions,
+		max_atoms,
+		max_ax,
+		vac_ratio,
+		using_prebuilt,
+		pre_built_structures,
+		max_fus,
+		atoms_per_fu,
+		imax_atoms,
+		use_spglib,
+		initial_population
+):
 	# set this to keep attempting moves until we make a valid move
 	complete = False
 
@@ -49,17 +74,19 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 	# print("starting atoms: ",len(start_structure['atoms']))
 	moves_to_choose = []
 
-	for i in list(moves.keys()):
-		for j in range(moves[i]):
-			moves_to_choose.append(i)
-
-	move = choice(moves_to_choose)
+	# for i in list(moves.keys()):
+	# 	for j in range(moves[i]):
+	# 		moves_to_choose.append(i)
+	# moves_to_choose = [move for move, count in moves.items() for _ in range(count)]
+	#
+	# move = choice(moves_to_choose)
+	move = random.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
 
 	# *** remember to remove this
 	# move = 10
 	# ***************************
 
-	while complete == False:
+	while not complete:
 		print("move: ", move)
 		##########################################################################
 		if move == 1:  # swap the position of two atoms
@@ -67,12 +94,12 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 			# check that we have more than one element present:
 			syms = []
 			for i in atoms:
-				if not i.symbol in syms:
+				if i.symbol not in syms:
 					syms.append(i.symbol)
 
 			# if we're dealing with an element, redraw a move and continue
 			if len(syms) == 1:
-				move = move = choice(moves_to_choose)
+				move = random.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
 				continue
 
 			if len(syms) > 1:
@@ -97,7 +124,8 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 				trial_fus = len(atoms) / sum(list(composition.values()))
 				counts = []
 				correct = False
-				if float(trial_fus).is_integer():
+
+				if float(trial_fus).is_integer():   #TODO: check this
 					# now need to check each species
 					symbols = atoms.get_chemical_symbols()
 					for x in list(composition.keys()):
@@ -106,7 +134,7 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 					if all(x == trial_fus for x in counts):
 						correct = True
 
-				if correct == True:
+				if correct:
 					comp_atoms = atoms.copy()
 					complete = True
 
@@ -127,8 +155,11 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 
 			# work out how many poitns we need along each axis
 			# print(cell)
-			npoints = [math.floor(cell[0] / grid_spacing), math.floor(cell[1] / grid_spacing),
-			           math.floor(cell[2] / grid_spacing)]
+			npoints = [
+				math.floor(cell[0] / grid_spacing),
+				math.floor(cell[1] / grid_spacing),
+				math.floor(cell[2] / grid_spacing),
+			]
 			# populate the grid
 
 			for x in range(npoints[0]):
@@ -1983,7 +2014,7 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 	write("swapped.cif", atoms)
 	atoms = comp_atoms.copy()
 	# ok, now we've completed the move we need to fill out the structure object:
-	if use_spglib == True:
+	if use_spglib:
 		import spglib
 		# from ase import Atoms
 		try:
@@ -1996,8 +2027,9 @@ def make_basin_move(current_structure, moves, bondtable, grid_spacing, exclusion
 			temp2.set_scaled_positions(positions)
 			atoms = temp2.copy()
 
-		except:
-			# if spglib cannont find a new cell, it returns a Nonetype error, so we can just pass & keep the current atoms object
+		except TypeError:
+			# if spglib can't find a new cell it returns None, and unpacking None into
+			# (lattice, positions, numbers) raises TypeError - just pass & keep the current atoms object
 			pass
 
 	# print("fine after spglib")

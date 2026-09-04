@@ -6,7 +6,7 @@ import sys
 
 from typing import Iterable
 
-from fuse202.config import SPP_PATH
+from fuse202.constant import SPP_PATH
 
 
 def assemble_spp(elements: Iterable, output='lib.lib', spp_path=SPP_PATH):
@@ -21,12 +21,22 @@ def assemble_spp(elements: Iterable, output='lib.lib', spp_path=SPP_PATH):
 		for elem1, elem2 in pairs:
 			try:
 				f = open(
-					os.path.join(spp_path, f"{elem1.upper()}-{elem2.upper()}", f"{elem1.upper()}-{elem2.upper()}.POT"),
-					'r').readlines()
-			except:
+					os.path.join(
+						spp_path,
+						f"{elem1.upper()}-{elem2.upper()}",
+						f"{elem1.upper()}-{elem2.upper()}.POT"
+					),
+					'r'
+				).readlines()
+			except IOError:
 				f = open(
-					os.path.join(spp_path, f"{elem2.upper()}-{elem1.upper()}", f"{elem2.upper()}-{elem1.upper()}.POT"),
-					'r').readlines()
+					os.path.join(
+						spp_path,
+						f"{elem2.upper()}-{elem1.upper()}",
+						f"{elem2.upper()}-{elem1.upper()}.POT"
+					),
+					'r'
+				).readlines()
 			o.write("\n")
 
 			for j in f:
@@ -67,7 +77,7 @@ def get_spp_reader(elements: Iterable, spp_path: str = SPP_PATH):
 
 def main():
 	elements = ['Sr', 'Ti', 'Y', 'O']
-	fetch_potential = get_spp_reader(elements, spp_path='/path/to/spp')
+	fetch_potential = get_spp_reader(elements, spp_path=SPP_PATH)
 
 	content = fetch_potential('H', 'O')
 	if content:

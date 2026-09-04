@@ -24,6 +24,7 @@ from ase import Atoms
 
 from ase.io import *
 from ase.visualize import *
+
 from fuse202.assemble_spp import *
 from fuse202.bond_table import BOND_DATA
 from fuse202.extract_modules import *
@@ -757,11 +758,11 @@ def run_fuse(
 	#############################################################################
 
 	### write to output file if restarts have been read #########################
-	if restart == True:
-		if used_backup == False:
-			o.write("\nRestart files successfully read")
-		if used_backup == True:
+	if restart:
+		if used_backup:
 			o.write("\nCould not load restart files, reverted to backup")
+		else:
+			o.write("\nRestart files successfully read")
 	#############################################################################
 
 	#### get the composition from the input file to write to output #############
@@ -1312,7 +1313,7 @@ def run_fuse(
 		pickle.dump(energies, open("energies.p", 'wb'))
 		search_generation_complete = True  # make sure that we always go onto start a new generation
 		pickle.dump(search_generation_complete, open("search_generation_complete.p", 'wb'))
-		if search == 1 or 2:
+		if search == 1 or search == 2:
 			pickle.dump(moves, open("moves.p", 'wb'))
 
 		os.chdir("../")
@@ -1326,15 +1327,20 @@ def run_fuse(
 	###################################################################################################################
 	#	If initial generation complete, print a summary of the lowest energy & which structure it is ###################
 	###################################################################################################################
-	if generation_complete == True:
+	if generation_complete:
 		print("Generation completed: ", end=' ')
+		print(
+			f"Lowest energy structure is: "
+			f"{list(energies.values()).index(min(list(energies.values())))} with energy:"
+			f"{round(min(list(energies.values())), 6)} eV/atom"
+		)
+
 		o.write("\n\nGeneration completed: ")
-		print("Lowest energy structure is: " + str(
-			list(energies.values()).index(min(list(energies.values())))) + " with energy: " + str(
-			round(min(list(energies.values())), 6)) + " eV/atom")
-		o.write("Lowest energy structure is: " + str(
-			list(energies.values()).index(min(list(energies.values())))) + " with energy: " + str(
-			round(min(list(energies.values())), 6)) + " eV/atom\n")
+		o.write(
+			f"Lowest energy structure is: "
+			f"{list(energies.values()).index(min(list(energies.values())))} with energy:"
+			f"{round(min(list(energies.values())), 6)} eV/atom\n"
+		)
 
 		# write out the current best structure as a cif
 		write("current_structure.cif",
@@ -1343,7 +1349,7 @@ def run_fuse(
 		      initial_population[str(list(energies.values()).index(min(list(energies.values()))))]['atoms'])
 
 		### if search == 1 or 2, set the current structure to be the lowest from the initial generation
-		if search == 1 or 2:
+		if search == 1 or search == 2:
 			current_structure = initial_population[
 				str(list(energies.values()).index(min(list(energies.values()))))].copy()
 		# set the blank next_geneation dictionary
@@ -1362,12 +1368,12 @@ def run_fuse(
 
 	while itr < iterations:  # need to use this to start running through the new structures.
 
-		if generation_complete == True:  # only run the search routine if the initial generation has been completed
+		if generation_complete:  # only run the search routine if the initial generation has been completed
 
 			# check to see if the previous generation has been built & run
 			# if true, then we need to go through and build some new structures, if false, then need to skip to next section ans start optimising structures.
 			# once the generation of structures has been created, set search_generation_complete = False to trigger the energy calculators.
-			if search_generation_complete == True:
+			if search_generation_complete:
 				# Before we do anything else, merge the generation which has just been completed into the main population
 				# for x in list(next_generation.keys()):
 				#	initial_population[x]=next_generation[x].copy()	
@@ -1432,7 +1438,7 @@ def run_fuse(
 							if all(x == trial_fus for x in counts):
 								correct = True
 
-						if correct == True:
+						if correct:
 							next_generation[str(structure_number)] = trial.copy()
 						else:
 							continue
@@ -1452,7 +1458,7 @@ def run_fuse(
 				if search == 3:  # Genetic Algo
 					pass
 
-			if search_generation_complete == False:  # while the generation is not completed, go through and find the next structure to optimise & do it!
+			if not search_generation_complete:  # while the generation is not completed, go through and find the next structure to optimise & do it!
 				# first check to see if all structures are complete
 				ncomplete = 0
 				keys_to_complete = []
@@ -1488,8 +1494,7 @@ def run_fuse(
 				# print out which structure we're upto
 				### change this back to end="\r"
 				# print (str("structure " + str(ncomplete+1) +" of " + str(len(list(next_generation.keys())))),end="\r")
-				print(str("structure " + str(ncomplete + 1) + " of " + str(len(list(next_generation.keys())))),
-				      end="\n")
+				print(f"structure {ncomplete + 1} of {len(list(next_generation.keys()))}\n")
 
 				atoms = next_generation[keys_to_complete[0]]['atoms']
 				backup_atoms = atoms.copy()
@@ -1498,7 +1503,7 @@ def run_fuse(
 				iat = len(atoms)
 				t1a = time.time()
 
-				if use_spglib == True:
+				if use_spglib:
 					try:
 						lattice, positions, numbers = spglib.standardize_cell(atoms, symprec=1.e-5)
 						temp2 = Atoms(numbers=numbers, pbc=True)

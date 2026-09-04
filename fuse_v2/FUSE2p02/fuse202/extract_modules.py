@@ -1,44 +1,45 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[226]:
+from __future__ import annotations
 
 import glob
+from typing import Any
+
 import numpy
 import os
 import sys
 from ase import Atoms
 from ase.io import *
 from ase.visualize import *
-from fuse202 import bond_table
+from fuse202.bond_table import BOND_DATA
 
-bondtable = numpy.load("bondtable.npz", allow_pickle=True)
-bondtable = bondtable['bond_table'].item()
+bondtable = BOND_DATA
 
 
-def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
+def extract_module(
+		input_files: list,
+		bondtable,
+		man_ap: float | None = None,
+		max_z: float = 0.8,
+		max_xy: float = 0.8,
+) -> dict | None:
 	try:
 		atoms = []
 
-		# 0. Pre-process all of the cif files to make sure that all co-ordinates are between 0 and 1
+		# 0. Pre-process all the cif files to make sure that all co-ordinates are between 0 and 1
 
 		for i in input_files:
 			at = read(i)
-
 			at.set_scaled_positions(at.get_scaled_positions())
-
 			atoms.append(at)
 
 		full_structure = atoms[0].copy()
-
 		modules = []
 
 		for i in atoms:
-
-			# 1. Work out the unit cell dimensions for each structure in terms of sub modules, using atomic radii, or through a manual sizing
-
+			# 1. Work out the unit cell dimensions for each structure in terms of submodules, using atomic radii,
+			# or through a manual sizing
 			form = i.get_chemical_symbols()
-			if man_ap == None:
+
+			if man_ap is None:
 				initial_guess = 0
 				for j in form:
 					initial_guess += bondtable[j][0][2]
@@ -51,8 +52,14 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 			sub_modules = [0, 0, 0, 90, 90, 90]
 			cell = i.cell.cellpar()
 
-			sub_modules = [round(cell[0] / initial_guess), round(cell[1] / initial_guess),
-			               round((cell[2] / initial_guess) * 2), cell[3], cell[4], cell[5]]
+			sub_modules = [
+				round(cell[0] / initial_guess),
+				round(cell[1] / initial_guess),
+				round((cell[2] / initial_guess) * 2),
+				cell[3],
+				cell[4],
+				cell[5],
+			]
 
 			if sub_modules[0] == 0:
 				sub_modules[0] = 1
@@ -63,8 +70,14 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 			if sub_modules[2] == 0:
 				sub_modules[1] = 1
 
-			sub_module_cell = [round(initial_guess, 6), round(initial_guess, 6), round(initial_guess / 2, 6),
-			                   round(cell[3]), round(cell[4]), round(cell[5])]
+			sub_module_cell = [
+				round(initial_guess, 6),
+				round(initial_guess, 6),
+				round(initial_guess / 2, 6),
+				round(cell[3]),
+				round(cell[4]),
+				round(cell[5]),
+			]
 
 			# 2. Now that we have our unit cell, break each structure down into it's component sub-modules
 
@@ -74,23 +87,40 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 
 			# will break down structure, starting at (0,0,0) moving in rows along y, then up through z.
 
-			co_ords = [[(cell[0] / sub_modules[0] * (position[0] / cell[0])),
-			            (cell[0] / sub_modules[0]) * ((position[0] + 1) / cell[0])],
-			           [(cell[1] / sub_modules[1] * (position[1] / cell[1])),
-			            (cell[1] / sub_modules[1]) * ((position[1] + 1) / cell[1])],
-			           [(cell[2] / sub_modules[2] * (position[2] / cell[2])),
-			            (cell[2] / sub_modules[2]) * ((position[2] + 1) / cell[2])]]
+			co_ords = [
+				[
+					(cell[0] / sub_modules[0] * (position[0] / cell[0])),
+					(cell[0] / sub_modules[0]) * ((position[0] + 1) / cell[0]),
+				],
+				[
+					(cell[1] / sub_modules[1] * (position[1] / cell[1])),
+					(cell[1] / sub_modules[1]) * ((position[1] + 1) / cell[1]),
+				],
+				[
+					(cell[2] / sub_modules[2] * (position[2] / cell[2])),
+					(cell[2] / sub_modules[2]) * ((position[2] + 1) / cell[2]),
+				],
+			]
 
 			for j in range(n_sub):
 
 				# After the first sub module, assign the new set of co-ordinates to pick out for sub-modules:
 
-				co_ords = [[(cell[0] / sub_modules[0] * (position[0] / cell[0])),
-				            (cell[0] / sub_modules[0]) * ((position[0] + 1) / cell[0])],
-				           [(cell[1] / sub_modules[1] * (position[1] / cell[1])),
-				            (cell[1] / sub_modules[1]) * ((position[1] + 1) / cell[1])],
-				           [(cell[2] / sub_modules[2] * (position[2] / cell[2])),
-				            (cell[2] / sub_modules[2]) * ((position[2] + 1) / cell[2])]]
+				# TODO: Position changes at each step, check if it is pointer or not
+				co_ords = [
+					[
+						(cell[0] / sub_modules[0] * (position[0] / cell[0])),
+						(cell[0] / sub_modules[0]) * ((position[0] + 1) / cell[0]),
+					],
+					[
+						(cell[1] / sub_modules[1] * (position[1] / cell[1])),
+						(cell[1] / sub_modules[1]) * ((position[1] + 1) / cell[1]),
+					],
+					[
+						(cell[2] / sub_modules[2] * (position[2] / cell[2])),
+						(cell[2] / sub_modules[2]) * ((position[2] + 1) / cell[2]),
+					],
+				]
 
 				# sub_module_cell
 				mod = Atoms()
@@ -185,23 +215,29 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 
 				# Need to move the range of co-ordinates that we're searching for for the next sub-module
 
-		structure = {'modules': modules, 'sub module cell': sub_module_cell, 'shape in submods': sub_modules,
-		             'nmods': n_sub, 'ap': initial_guess, 'atoms': full_structure}
+		structure = {
+			'modules': modules,
+			'sub module cell': sub_module_cell,
+			'shape in submods': sub_modules,
+			'nmods': n_sub,
+			'ap': initial_guess,
+			'atoms': full_structure,
+		}
 
 		# if there's a specified limit on the maximum fractional co-ordinate for a sub module, go through and scale the sub_module positions:
 		scale = False
-		if max_z != None:
+		if max_z is not None:
 			scale = True
 
-		if max_xy != None:
+		if max_xy is not None:
 			scale = True
 
-		if scale == True:
+		if scale:
 			mods = structure['modules'].copy()
 			s = [1, 1, 1]
-			if max_z != None:
+			if max_z is not None:
 				s[2] = max_z
-			if max_xy != None:
+			if max_xy is not None:
 				s[0] = max_xy
 				s[1] = max_xy
 
@@ -210,8 +246,11 @@ def extract_module(input_files, bondtable, man_ap=None, max_z=0.8, max_xy=0.8):
 				# print(temp)
 				# print(temp.positions)
 				for j in list(range(len(temp))):
-					temp[j].position = [temp[j].position[0] * s[0], temp[j].position[1] * s[1],
-					                    temp[j].position[2] * s[2]]
+					temp[j].position = [
+						temp[j].position[0] * s[0],
+						temp[j].position[1] * s[1],
+						temp[j].position[2] * s[2],
+					]
 				# print(temp.positions)
 
 				mods[i] = temp.copy()
