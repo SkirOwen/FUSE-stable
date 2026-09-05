@@ -33,6 +33,7 @@ ml = [
 [dependency-groups]
 dev = [
     "pytest",
+    "hypothesis",
 ]
 
 [tool.setuptools.packages.find]

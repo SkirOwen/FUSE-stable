@@ -1,7 +1,15 @@
 # function to take the updated structure object and return a new atoms object
 # this should be used after a structure has been altered
 
-from fuse202.all import *
+# Direct import rather than `from fuse202.all import *`: fuse202.all imports
+# run_fuse, which star-imports make_basin_move, which imports this module - a
+# cycle that left run_fuse without a `make_basin_move` attribute whenever this
+# module happened to be imported first. extract_module is the only name this
+# file needed from there, alongside ase's Atoms (previously arriving
+# implicitly through that same star-import chain).
+from ase import Atoms
+
+from fuse202.structure.extract_modules import extract_module
 
 
 # example to take an input cif and break it down into modules to test the re-assembly

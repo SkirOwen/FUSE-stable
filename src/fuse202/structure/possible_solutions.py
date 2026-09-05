@@ -175,12 +175,19 @@ class CrystalSolutionsCalculator:
 				solutions.setdefault(y, []).append([i, j])
 		return solutions
 
-	def _calculate_3d_solutions(self, step: int = 1) -> dict[int, list[list[int]]]:
-		"""Calculate solutions for orthorhombic/monoclinic systems."""
+	def _calculate_3d_solutions(self, start: int = 1, step: int = 1) -> dict[int, list[list[int]]]:
+		"""Calculate solutions for orthorhombic/monoclinic systems.
+
+		`start` matters: orthorhombic cells are restricted to an even number of
+		sub-modules along z, so they start at 2 and step by 2. Monoclinic has no
+		such restriction and starts at 1. Collapsing both onto a shared start of
+		1 gives orthorhombic odd z values instead of even ones - which silently
+		broke structure generation entirely.
+		"""
 		solutions = {}
 		for i in range(1, self.max_ax + 1):
 			for j in range(1, self.max_ax + 1):
-				for k in range(1, self.max_ax + 1, step):
+				for k in range(start, self.max_ax + 1, step):
 					y = orthorhombic_function(i, j, k)
 					solutions.setdefault(y, []).append([i, j, k])
 		return solutions
@@ -201,8 +208,8 @@ class CrystalSolutionsCalculator:
 		cubic = self._load_or_create_solutions("cubes.p", self._calculate_cubic_solutions)
 		tetragonal = self._load_or_create_solutions("tetragonal.p", lambda: self._calculate_2d_solutions(step=2))
 		hexagonal = self._load_or_create_solutions("hexagonal.p", lambda: self._calculate_2d_solutions(step=1))
-		orthorhombic = self._load_or_create_solutions("orthorhombic.p", lambda: self._calculate_3d_solutions(step=2))
-		monoclinic = self._load_or_create_solutions("monoclinic.p", lambda: self._calculate_3d_solutions(step=1))
+		orthorhombic = self._load_or_create_solutions("orthorhombic.p", lambda: self._calculate_3d_solutions(start=2, step=2))
+		monoclinic = self._load_or_create_solutions("monoclinic.p", lambda: self._calculate_3d_solutions(start=1, step=1))
 
 		return cubic, tetragonal, hexagonal, orthorhombic, monoclinic
 

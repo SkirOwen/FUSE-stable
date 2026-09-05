@@ -96,13 +96,20 @@ def generate_random_structure(
 
 		# print("atoms: \n",atoms)
 
-		try:
-
-			stripped = list(filter((120).__ne__, string))
-			n_atoms = len(stripped)
-
-		except:
-			n_atoms = 0
+		# Count the real atoms in the string; 120 (ord('x')) marks a vacancy.
+		# This used to be `list(filter((120).__ne__, string))`, which is unsafe:
+		# the string mixes plain ints with numpy int64 (get_fu() builds it from
+		# ase's get_atomic_numbers()), and `(120).__ne__(np.int64(...))` returns
+		# NotImplemented rather than a bool. Python 3.12+ raises
+		# "NotImplemented should not be used in a boolean context" for that,
+		# which the old bare `except` swallowed into n_atoms = 0 - so no
+		# candidate ever matched target_atoms and generation could never
+		# succeed on a modern interpreter. A comparison uses normal reflected
+		# dispatch and handles both int types correctly.
+		# create_random_string() returns None for the string when it fails to
+		# build one; that is a legitimate "no candidate this round" result, so
+		# treat it as zero atoms and let the loop retry.
+		n_atoms = 0 if string is None else len([atom for atom in string if atom != 120])
 
 		try:
 			atoms, instructions = assemble_structure(string, instructions)

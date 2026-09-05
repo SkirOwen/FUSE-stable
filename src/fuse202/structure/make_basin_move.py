@@ -72,14 +72,17 @@ def make_basin_move(
 
 	start_structure = current_structure.copy()
 	# print("starting atoms: ",len(start_structure['atoms']))
-	moves_to_choose = []
+	# Each move id repeated as many times as its weight in `moves`. 28 later call
+	# sites draw from this list to redraw a different move when the chosen one
+	# turns out not to apply (wrong number of atoms, too few elements, etc.).
+	# A refactor replaced only the *first* pick below with random.choices() and
+	# commented this population out, leaving the list permanently empty - so
+	# every one of those redraw paths hit `choice([])` and crashed the run with
+	# "Cannot choose from an empty sequence".
+	moves_to_choose = [move_id for move_id, weight in moves.items() for _ in range(weight)]
 
-	# for i in list(moves.keys()):
-	# 	for j in range(moves[i]):
-	# 		moves_to_choose.append(i)
-	# moves_to_choose = [move for move, count in moves.items() for _ in range(count)]
-	#
-	# move = choice(moves_to_choose)
+	# Equivalent to choice(moves_to_choose), since the list already encodes the
+	# weights by repetition.
 	move = random.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
 
 	# *** remember to remove this
@@ -2027,9 +2030,14 @@ def make_basin_move(
 			temp2.set_scaled_positions(positions)
 			atoms = temp2.copy()
 
-		except TypeError:
-			# if spglib can't find a new cell it returns None, and unpacking None into
-			# (lattice, positions, numbers) raises TypeError - just pass & keep the current atoms object
+		except Exception:
+			# spglib fails in two different ways here and both mean the same thing
+			# ("couldn't standardise this cell"), so both are skipped, keeping the
+			# current atoms object: it either returns None - and unpacking None
+			# into (lattice, positions, numbers) raises TypeError - or it raises
+			# SpglibError directly. An earlier fix narrowed this to TypeError only,
+			# which let SpglibError escape and abort the whole basin-hopping run.
+			# Exception rather than a bare except, so Ctrl-C still works.
 			pass
 
 	# print("fine after spglib")
