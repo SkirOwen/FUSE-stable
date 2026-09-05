@@ -1,0 +1,24 @@
+# Dependency pins for the gnboss ML structure generator
+# (resources/gnboss_template.zip). Extracted here from inside that zip,
+# and re-encoded from UTF-16 to UTF-8 so it is readable without unzipping.
+#
+# THESE CANNOT BE INSTALLED ALONGSIDE fuse202. tensorflow 2.3.2 only ships
+# wheels for CPython 3.6-3.8, while fuse202 requires Python >= 3.11, and
+# the numpy/pandas/pymatgen pins below are years behind what fuse202
+# resolves. gnboss is therefore run from its own separate environment and
+# invoked as a subprocess - see run_fuse()'s gn_boss_command parameter.
+#
+# Install into a dedicated environment, e.g.:
+#   conda create --name gnboss python=3.6.13
+#   conda activate gnboss
+#   python -m pip install -r resources/gnboss-requirements.txt
+
+numpy==1.18.5
+megnet==1.1.8
+pymatgen==2020.8.13
+tensorflow==2.3.2
+hyperopt==0.2.4
+scikit-opt==0.6.1
+pandas==1.1.4
+monty==2021.7.8
+ruamel.yaml==0.17.40

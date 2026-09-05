@@ -58,6 +58,8 @@ The ML structure generater is replacated from the model presented in this paper 
 
 https://www.nature.com/articles/s41467-022-29241-4
 
+Note: gnboss **must** be installed into its own separate environment - it cannot be added to FUSE's own dependencies or installed alongside them. It pins `tensorflow==2.3.2`, which only ships wheels for CPython 3.6-3.8, whereas FUSE v2 requires Python 3.11 or newer; its `numpy`, `pandas` and `pymatgen` pins are likewise years behind what FUSE resolves. This is why FUSE calls gnboss as a subprocess through the `gn_boss_command` parameter (pointing at that separate environment's python) rather than importing it. Its pinned dependency list is readable at `resources/gnboss-requirements.txt` without needing to unpack the archive.
+
 to install, first unpack the "resources/gnboss_template.zip" archive and go into the first directory.
 
 create a fresh anaconda environment:
