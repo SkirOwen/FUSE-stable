@@ -9,7 +9,7 @@ import time
 from ase.calculators.gulp import GULP
 from ase.io import *
 from func_timeout import func_timeout, FunctionTimedOut
-from fuse202.gulp import *
+from fuse202.calculators.gulp import *
 from threading import Thread
 
 

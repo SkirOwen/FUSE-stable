@@ -6,9 +6,9 @@ import sys
 from ase.atoms import *
 from ase.io import *
 from ase.visualize import *
-from fuse202.assemble_structure_2 import *
-from fuse202.extract_modules import *
-from fuse202.make_new_structure import *
+from fuse202.structure.assemble_structure_2 import *
+from fuse202.structure.extract_modules import *
+from fuse202.structure.make_new_structure import *
 from random import shuffle
 
 

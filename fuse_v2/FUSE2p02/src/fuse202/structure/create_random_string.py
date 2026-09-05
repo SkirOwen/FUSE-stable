@@ -3,7 +3,7 @@ import random
 from ase import *
 from torch.optim.radam import radam
 
-import fuse202.possible_solutions
+import fuse202.structure.possible_solutions
 # from fuse_102.example_input_only.gulp.input_gulp_example import imax_atoms
 
 
@@ -342,14 +342,14 @@ class RandomStructureGenerator:
 
 import statistics
 from decimal import Decimal
-import fuse202.possible_solutions
-from fuse202.bond_table import BOND_DATA
+import fuse202.structure.possible_solutions
+from fuse202.bonds.bond_table import BOND_DATA
 
 
 def main():
 
 	max_ax = 40
-	solutions = fuse202.possible_solutions.possible_solutions(max_ax)
+	solutions = fuse202.structure.possible_solutions.possible_solutions(max_ax)
 	cubic_solutions, tetragonal_solutions, hexagonal_solutions, orthorhombic_solutions, monoclinic_solutions = solutions
 	print(cubic_solutions)
 

@@ -1,8 +1,8 @@
 import numpy
 import sys
 from ase.visualize import *
-from fuse202.get_distances import *
-from fuse202.test_bonds import test_bonds
+from fuse202.structure.get_distances import *
+from fuse202.bonds.test_bonds import test_bonds
 
 
 def error_check_structure(atoms, ideal_density, density_cutoff, check_bonds, btol,

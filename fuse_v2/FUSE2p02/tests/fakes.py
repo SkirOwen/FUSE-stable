@@ -5,9 +5,9 @@ and friends need a way to run without them. run_gulp/run_vasp/run_qe/
 run_chgnet/run_calculators all share the same (atoms, energy, converged)
 return contract - FakeCalculator matches that shape so it can be swapped in
 via monkeypatch wherever fuse202 imports those functions by name (they're
-brought in with `from fuse202.run_gulp import *` etc., so patch the name on
+brought in with `from fuse202.calculators.run_gulp import *` etc., so patch the name on
 the *importing* module, e.g. `monkeypatch.setattr(fuse202.run_fuse, "run_gulp",
-fake.gulp)`, not on fuse202.run_gulp itself).
+fake.gulp)`, not on fuse202.calculators.run_gulp itself).
 
 To exercise a real calculator when one is actually available on a given
 machine, point the same monkeypatch target at the real function instead of

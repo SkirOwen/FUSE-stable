@@ -1,6 +1,6 @@
 """Characterizes generate_random_structure()'s retry loop, and the *unbounded*
 retry loop one layer up in its caller, get_new_structure() - see
-fuse202/generate_random_structure.py and fuse202/make_new_structure.py.
+fuse202/structure/generate_random_structure.py and fuse202/structure/make_new_structure.py.
 
 Manual testing of run_fuse() (with a faked energy calculator, so no external
 binary was involved) hung indefinitely at "Generating Initial Population" for
@@ -35,8 +35,8 @@ worth re-deriving properly once Phase 4 breaks up this call chain.
 import inspect
 import re
 
-import fuse202.generate_random_structure as grs
-import fuse202.make_new_structure as mns
+import fuse202.structure.generate_random_structure as grs
+import fuse202.structure.make_new_structure as mns
 
 
 def test_generate_random_structure_gives_up_after_max_attempts(monkeypatch):

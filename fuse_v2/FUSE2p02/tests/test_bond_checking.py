@@ -1,14 +1,14 @@
 import pytest
 
-from fuse202.bond_table import BOND_DATA
-# Aliased on import: fuse202.test_bonds.test_bonds is production bond-checking
+from fuse202.bonds.bond_table import BOND_DATA
+# Aliased on import: fuse202.bonds.test_bonds.test_bonds is production bond-checking
 # code, not a pytest test, but pytest's default collection still picks up any
 # `test_*`-named callable sitting in a test module's namespace - importing it
 # under its real name here previously made pytest try to collect and call it
 # directly, and fail on missing fixtures. See test_bond_table.py's
 # "only ever a single oxidation state" test and this file's KeyError test for
 # what the function itself is actually being characterized on.
-from fuse202.test_bonds import test_bonds as check_bonds
+from fuse202.bonds.test_bonds import test_bonds as check_bonds
 
 
 def test_neutral_octahedral_structure_has_no_bonding_errors(octahedral_yo6):

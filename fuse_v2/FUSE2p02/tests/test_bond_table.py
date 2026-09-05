@@ -1,5 +1,5 @@
-from fuse202 import bond_table
-from fuse202.bond_table import BOND_DATA
+from fuse202.bonds import bond_table
+from fuse202.bonds.bond_table import BOND_DATA
 
 
 def test_bond_data_has_expected_entry_shape():

@@ -6,7 +6,7 @@ from ase import Atoms
 def octahedral_yo6() -> Atoms:
 	"""A single YO6 octahedron: Y at the centre, one O at +-x/+-y/+-z, each 1.0 A away.
 
-	Lifted from fuse202/test_bonds.py's own hand-written main() smoke test, which
+	Lifted from fuse202/bonds/test_bonds.py's own hand-written main() smoke test, which
 	built this exact structure to sanity-check bond counting by eye before there
 	was a real test suite to do it.
 	"""

@@ -15,11 +15,11 @@ from ase.calculators.gulp import GULP
 from ase.calculators.vasp import Vasp
 from ase.io import *
 
-from fuse202.gulp import *
-from fuse202.run_chgnet import *
-from fuse202.run_gulp import *
-from fuse202.run_qe import *
-from fuse202.run_vasp import *
+from fuse202.calculators.gulp import *
+from fuse202.calculators.run_chgnet import *
+from fuse202.calculators.run_gulp import *
+from fuse202.calculators.run_qe import *
+from fuse202.calculators.run_vasp import *
 
 
 # def cellpar(atoms):

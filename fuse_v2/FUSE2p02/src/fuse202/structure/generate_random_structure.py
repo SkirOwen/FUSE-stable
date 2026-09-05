@@ -1,10 +1,10 @@
 import os
 import sys
 from ase.visualize import *
-from fuse202.assemble_structure_generator import *
-from fuse202.create_random_instructions import *
-from fuse202.create_random_string import *
-from fuse202.error_check_structure import *
+from fuse202.structure.assemble_structure_generator import *
+from fuse202.structure.create_random_instructions import *
+from fuse202.structure.create_random_string import *
+from fuse202.structure.error_check_structure import *
 
 
 def generate_random_structure(

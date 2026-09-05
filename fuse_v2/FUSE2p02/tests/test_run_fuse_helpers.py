@@ -6,7 +6,7 @@ eager CHGNet model loads at import time via mutable default arguments
 cost of testing anything in this module today, and a concrete argument for
 Phase 4's run_fuse() breakup to stop doing that.
 """
-from fuse202.bond_table import BOND_DATA
+from fuse202.bonds.bond_table import BOND_DATA
 from fuse202.run_fuse import cal_ap, cal_ideal_density, get_fu
 
 

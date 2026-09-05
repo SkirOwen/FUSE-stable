@@ -14,7 +14,7 @@ import warnings
 from decimal import Decimal
 from random import choice
 
-import fuse202.bond_table
+import fuse202.bonds.bond_table
 import numpy
 import numpy as np
 import pandas
@@ -25,19 +25,19 @@ from ase import Atoms
 from ase.io import *
 from ase.visualize import *
 
-from fuse202.assemble_spp import *
-from fuse202.bond_table import BOND_DATA
-from fuse202.extract_modules import *
-from fuse202.generate_random_structure import *
-from fuse202.make_basin_move import *
-from fuse202.make_new_structure import *
+from fuse202.structure.assemble_spp import *
+from fuse202.bonds.bond_table import BOND_DATA
+from fuse202.structure.extract_modules import *
+from fuse202.structure.generate_random_structure import *
+from fuse202.structure.make_basin_move import *
+from fuse202.structure.make_new_structure import *
 from fuse202.plot_results import *
-from fuse202.possible_solutions import calculate_possible_solutions
-from fuse202.run_chgnet import *
-from fuse202.run_gulp import *
-from fuse202.run_multiple_calculators import run_calculators
-from fuse202.run_qe import *
-from fuse202.run_vasp import *
+from fuse202.structure.possible_solutions import calculate_possible_solutions
+from fuse202.calculators.run_chgnet import *
+from fuse202.calculators.run_gulp import *
+from fuse202.calculators.run_multiple_calculators import run_calculators
+from fuse202.calculators.run_qe import *
+from fuse202.calculators.run_vasp import *
 
 
 # warnings.filterwarnings("ignore") # currently use this as python raises RuntimeError

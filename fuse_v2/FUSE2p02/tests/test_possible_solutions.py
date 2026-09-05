@@ -1,4 +1,4 @@
-from fuse202.possible_solutions import (
+from fuse202.structure.possible_solutions import (
 	CrystalSolutionsCalculator,
 	cube_function,
 	orthorhombic_function,

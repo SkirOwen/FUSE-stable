@@ -1,13 +1,13 @@
 # fuse imports
-import fuse202.bond_table
+import fuse202.bonds.bond_table
 import math
 import numpy
 import pandas
 from ase.io import *
 from ase.visualize import *
-from fuse202.extract_modules import *
-from fuse202.generate_random_structure import *
-from fuse202.possible_solutions import *
+from fuse202.structure.extract_modules import *
+from fuse202.structure.generate_random_structure import *
+from fuse202.structure.possible_solutions import *
 # other imports
 from random import choice
 

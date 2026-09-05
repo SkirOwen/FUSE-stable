@@ -32,7 +32,7 @@ from fakes import FakeCalculator
 def _canned_srtio3_structure():
 	"""A real 5-atom cubic perovskite SrTiO3 cell (a=3.905 A), standing in for
 	whatever get_new_structure() would otherwise have produced. Shaped to
-	match the dict extract_module() returns (see fuse202/extract_modules.py)."""
+	match the dict extract_module() returns (see fuse202/structure/extract_modules.py)."""
 	atoms = Atoms(
 		symbols=['Sr', 'Ti', 'O', 'O', 'O'],
 		scaled_positions=[

@@ -9,7 +9,7 @@ import sys
 from ase import Atoms
 from ase.io import *
 from ase.visualize import *
-from fuse202.bond_table import BOND_DATA
+from fuse202.bonds.bond_table import BOND_DATA
 
 bondtable = BOND_DATA
 

@@ -36,6 +36,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["fuse202*"]
 
 [tool.pytest.ini_options]
