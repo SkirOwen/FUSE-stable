@@ -49,7 +49,14 @@ def create_random_string(
 	# composition:  {'Y': 2, 'Ti': 2, 'O': 7}
 	# ap:  4.276364
 	# hello2
-	random.seed(25)
+	# NOTE: a stray `random.seed(25)` used to sit here. It pinned Python's global
+	# RNG on every call, so this function returned the identical structure every
+	# time (verified: 100/100 calls gave the same 12-atom cell) and, because the
+	# seed is global, it also destroyed randomness everywhere else - including
+	# basin-hopping move selection. It was left over from debugging a single
+	# case, as the commented-out parameter dump above shows. If reproducible
+	# runs are wanted, seed once at the entry point rather than inside a leaf
+	# function.
 
 	max_atoms = len(max_fus * fu)
 	max_vac = vac_ratio * max_atoms
@@ -237,7 +244,6 @@ class RandomStructureGenerator:
 		self.max_vac = self.vac_ratio * self.max_atoms
 		self.max_sub = (self.max_atoms + self.max_vac) // 4
 
-		random.seed(25)
 
 	def _select_random_lattice(self) -> int:
 		"""Randomly selects a lattice type."""

@@ -40,7 +40,24 @@ def get_new_structure(
 		use_spglib='',
 ):
 	gen = False
+	# generate_random_structure() gives up after its own internal attempt budget
+	# and returns atoms=None. Without a cap here we would just ask it again,
+	# forever, whenever a composition/parameter combination can never satisfy
+	# error_check_structure() - which is exactly how run_fuse() used to hang
+	# during "Generating Initial Population" with no output and no way out.
+	max_rounds = 100
+	rounds = 0
 	while gen == False:
+		rounds += 1
+		if rounds > max_rounds:
+			raise RuntimeError(
+				f"Could not generate a valid random structure after {max_rounds} rounds "
+				f"of {max_rounds * 1000} total attempts for composition {composition}. "
+				"No candidate passed error checking, so the search space is probably "
+				"over-constrained: try relaxing density_cutoff, btol or dist_cutoff, "
+				"raising max_atoms/imax_atoms, or check that the bond table covers "
+				"every element in the composition."
+			)
 		##############################################################################
 		# now call the generate random structure function
 		# for each iteration of generating n structures:

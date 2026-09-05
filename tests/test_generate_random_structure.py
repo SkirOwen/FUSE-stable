@@ -1,48 +1,36 @@
-"""Characterizes generate_random_structure()'s retry loop, and the *unbounded*
-retry loop one layer up in its caller, get_new_structure() - see
-fuse202/structure/generate_random_structure.py and fuse202/structure/make_new_structure.py.
+"""Tests for the retry loops in structure generation - the ones that used to
+make run_fuse() hang.
 
 Manual testing of run_fuse() (with a faked energy calculator, so no external
 binary was involved) hung indefinitely at "Generating Initial Population" for
 two different realistic-looking compositions (SrTiO3 and Ca3Ti2O7, using
-parameters straight out of examples/input_files/fgen_input.py). Reading
-the source shows why, and it's two compounding bugs:
+parameters straight out of examples/input_files/fgen_input.py). Two compounding
+bugs caused it, both now fixed:
 
-1. get_new_structure()'s `while gen == False:` loop (make_new_structure.py:43)
-   calls generate_random_structure() again every time it comes back empty,
-   with no cap of its own - so whenever a composition can never satisfy
-   error_check_structure() within generate_random_structure()'s own attempt
-   budget, get_new_structure() retries that budget forever.
-2. generate_random_structure()'s own budget (max_attempts=1000) only works
-   when candidates are cleanly *rejected*. Two bare `except: continue` blocks
-   (around create_random_string() and assemble_structure()) skip straight
-   back to the top of the loop *before* `attempts += 1` runs - so if either
-   call raises on every try, attempts never advances and the cap never fires.
+1. get_new_structure() (structure/make_new_structure.py) called
+   generate_random_structure() again every time it came back empty, with no cap
+   of its own - so whenever a composition could never satisfy
+   error_check_structure(), it retried forever.
+2. generate_random_structure()'s own budget (max_attempts) only worked when
+   candidates were cleanly *rejected*. Two bare `except: continue` blocks
+   skipped straight back to the top of the loop *before* `attempts += 1` ran,
+   so if either call raised on every try, attempts never advanced and the cap
+   never fired.
 
-test_generate_random_structure_gives_up_after_max_attempts below executes bug
-2's *good* path (clean rejection) and confirms it behaves correctly - that
-part isn't broken. The other two tests can't safely be executed: the bare
-`except:` in the real code catches literally everything, including an
-exception raised from inside a mock specifically to escape the loop, and
-multiprocessing termination was ruled out because this process has already
-initialized CHGNet on the MPS backend at import time (see
-test_run_fuse_helpers.py's module docstring) and forking after a GPU context
-is initialized is its own hazard. So bugs 1 and 2's actually-broken paths are
-pinned as source-structure assertions instead - honest about the fact that
-they characterize the code as written, not an executed reproduction, and
-worth re-deriving properly once Phase 4 breaks up this call chain.
+These tests now assert the fixed behaviour: both loops terminate. They are
+written so that a regression re-introduces a *failing test*, not a hanging
+suite - each one bounds the work with a call counter and asserts the loop gave
+up on its own rather than relying on a timeout.
 """
-import inspect
-import re
+import pytest
 
 import fuse202.structure.generate_random_structure as grs
 import fuse202.structure.make_new_structure as mns
 
 
 def test_generate_random_structure_gives_up_after_max_attempts(monkeypatch):
-	"""generate_random_structure()'s own `attempts == max_attempts` cap (1000,
-	hardcoded) does work when candidates are cleanly rejected (no exception):
-	it returns atoms=None rather than looping forever."""
+	"""Clean-rejection path: every candidate is rejected by error_check_structure,
+	so the attempt cap should fire and hand back atoms=None."""
 	monkeypatch.setattr(grs, "create_random_string", lambda *a, **k: ("string", "instructions"))
 	monkeypatch.setattr(grs, "create_random_instructions", lambda *a, **k: "instructions")
 	monkeypatch.setattr(grs, "assemble_structure", lambda *a, **k: ([1, 2, 3], "instructions"))
@@ -62,48 +50,88 @@ def test_generate_random_structure_gives_up_after_max_attempts(monkeypatch):
 	assert accept == 0
 
 
-def test_KNOWN_BUG_swallowed_exception_bypasses_the_attempt_cap():
-	"""KNOWN BUG (not yet fixed, not safely executable - see module docstring):
-	`attempts += 1` (generate_random_structure.py:114) sits after both
-	try/except-continue blocks that wrap create_random_string() and
-	assemble_structure(). If either raises on every call, `continue` returns
-	to the top of the loop without ever reaching the increment, so
-	max_attempts is never reached. Pinned here as a source-order assertion:
-	both `except:` blocks must appear before the increment in the function
-	body. If this test starts failing because the increment moved earlier (or
-	the except clauses became narrower/no longer swallow everything before
-	incrementing), that's the bug being fixed - update or delete this test to
-	match.
+def test_generate_random_structure_terminates_when_every_attempt_raises(monkeypatch):
+	"""Regression test for the swallowed-exception bug: create_random_string()
+	raising on every call must still count towards the attempt cap. Before the
+	fix `attempts += 1` sat after the `except: continue`, so the counter never
+	advanced and this looped forever.
+
+	The call counter both proves the cap fired and bounds the damage if it ever
+	regresses - the assertion fails on call 5000 instead of the suite hanging.
 	"""
-	source = inspect.getsource(grs.generate_random_structure)
-	attempts_increment_pos = source.index("attempts += 1")
-	except_positions = [m.start() for m in re.finditer(r"\n\s*except\s*:\s*\n\s*continue", source)]
+	calls = {"n": 0}
 
-	assert len(except_positions) == 2, (
-		"expected exactly 2 bare `except: continue` blocks in "
-		"generate_random_structure() - count changed, re-verify this test's premise"
+	def always_raises(*args, **kwargs):
+		calls["n"] += 1
+		if calls["n"] > 5000:
+			raise AssertionError(
+				"generate_random_structure() did not give up - the attempt cap "
+				"is not counting failed attempts again"
+			)
+		raise ValueError("simulated failure inside create_random_string")
+
+	monkeypatch.setattr(grs, "create_random_string", always_raises)
+
+	atoms, string, instructions, accept = grs.generate_random_structure(
+		target_atoms=5,
+		cubic_solutions={}, tetragonal_solutions={}, hexagonal_solutions={},
+		orthorhombic_solutions={}, monoclinic_solutions={},
+		atoms_per_fu=5, ideal_density=1.0, density_cutoff=0.4,
+		check_bonds=True, btol=0.25, system_type='neutral',
+		fu=[38, 22, 8, 8, 8], composition={'Sr': 1, 'Ti': 1, 'O': 3},
+		bondtable={}, ap=4.672, check_distances=True, dist_cutoff=1.0,
 	)
-	assert all(pos < attempts_increment_pos for pos in except_positions), (
-		"a bare except-continue now runs AFTER the attempts increment - if so, "
-		"the swallowed-exception bug described in this test's docstring is fixed"
-	)
+
+	assert atoms is None
+	assert calls["n"] == 1000, "should stop at exactly max_attempts (1000) tries"
 
 
-def test_KNOWN_BUG_get_new_structure_outer_loop_has_no_attempt_cap():
-	"""KNOWN BUG (not yet fixed, not safely executable - see module docstring):
-	get_new_structure()'s `while gen == False:` loop (make_new_structure.py:43)
-	has no max-attempts guard at all, unlike generate_random_structure()'s own
-	`attempts == max_attempts` check. This is the loop that actually hung
-	during manual run_fuse() testing. Pinned as a source assertion: no
-	attempt-counting construct exists between the `while gen == False:` line
-	and the function's end. If this test starts failing because someone added
-	a cap, that's the bug being fixed - update or delete this test to match.
-	"""
-	source = inspect.getsource(mns.get_new_structure)
-	loop_start = source.index("while gen == False:")
-	loop_body = source[loop_start:]
+def test_generate_random_structure_lets_keyboard_interrupt_through(monkeypatch):
+	"""The retry blocks used to use a bare `except:`, which swallows
+	KeyboardInterrupt and SystemExit too - meaning a stuck run could not even be
+	Ctrl-C'd out of. They now catch Exception, so interrupts propagate."""
 
-	assert "attempts" not in loop_body, (
-		"get_new_structure() now tracks attempts in its retry loop - if so, "
-		"the unbounded-retry bug described in this test's docstring is fixed"
-	)
+	def interrupted(*args, **kwargs):
+		raise KeyboardInterrupt
+
+	monkeypatch.setattr(grs, "create_random_string", interrupted)
+
+	with pytest.raises(KeyboardInterrupt):
+		grs.generate_random_structure(
+			target_atoms=5,
+			cubic_solutions={}, tetragonal_solutions={}, hexagonal_solutions={},
+			orthorhombic_solutions={}, monoclinic_solutions={},
+			atoms_per_fu=5, ideal_density=1.0, density_cutoff=0.4,
+			check_bonds=True, btol=0.25, system_type='neutral',
+			fu=[38, 22, 8, 8, 8], composition={'Sr': 1, 'Ti': 1, 'O': 3},
+			bondtable={}, ap=4.672, check_distances=True, dist_cutoff=1.0,
+		)
+
+
+def test_get_new_structure_raises_instead_of_retrying_forever(monkeypatch):
+	"""Regression test for the hang itself: when generate_random_structure()
+	can never produce a structure, get_new_structure() must give up with an
+	actionable error rather than asking again indefinitely."""
+	calls = {"n": 0}
+
+	def always_fails(*args, **kwargs):
+		calls["n"] += 1
+		if calls["n"] > 500:
+			raise AssertionError(
+				"get_new_structure() did not give up - its retry cap is gone again"
+			)
+		return None, None, None, 0
+
+	monkeypatch.setattr(mns, "generate_random_structure", always_fails)
+
+	with pytest.raises(RuntimeError, match="Could not generate a valid random structure"):
+		mns.get_new_structure(
+			composition={'Sr': 1, 'Ti': 1, 'O': 3}, max_atoms=10, imax_atoms=10,
+			restart=False, max_ax=10, density_cutoff=0.4, check_bonds=True, btol=0.25,
+			check_distances=True, system_type='neutral', dist_cutoff=1.0, vac_ratio=4,
+			atoms_per_fu=5, imax_fus=2, max_fus=2, cubic_solutions={}, tetragonal_solutions={},
+			hexagonal_solutions={}, orthorhombic_solutions={}, monoclinic_solutions={},
+			bondtable={}, ideal_density=1.0, fu=[38, 22, 8, 8, 8], ap=4.672, use_spglib=False,
+		)
+
+	assert calls["n"] == 100, "should stop after exactly max_rounds (100) rounds"

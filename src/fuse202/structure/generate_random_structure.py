@@ -37,6 +37,20 @@ def generate_random_structure(
 	attempts = 0
 
 	while not complete:
+		# Counted AND checked here at the top. Both have to be up here: the
+		# `except ... continue` paths below jump straight back to the top of the
+		# loop, skipping anything at the bottom - which is why a
+		# create_random_string()/assemble_structure() call that failed every time
+		# used to loop forever, never counting an attempt and never reaching the
+		# cap. Give up after max_attempts and report failure the same way a run
+		# of clean rejections does, by handing back atoms=None.
+		attempts += 1
+		if attempts > max_attempts:
+			accept = 0
+			atoms = None
+			string = None
+			instructions = None
+			break
 		# print(attempts)
 		# try:
 		# print("\nstart")
@@ -70,7 +84,7 @@ def generate_random_structure(
 				composition=composition,
 				ap=ap
 			)
-		except:
+		except Exception:
 			continue
 		# check to see if it has the correct number of atoms
 		# print("string: \n",string)
@@ -92,7 +106,7 @@ def generate_random_structure(
 
 		try:
 			atoms, instructions = assemble_structure(string, instructions)
-		except:
+		except Exception:
 			continue
 
 		if len(atoms) > 0:
@@ -111,14 +125,6 @@ def generate_random_structure(
 			if accept == 1:
 				complete = True
 
-		attempts += 1
-
-		if attempts == max_attempts:
-			accept = 0
-			atoms = None
-			string = None
-			instructions = None
-			break
 	# view(atoms)
 	# print(n_atoms)
 	# print("\n")
