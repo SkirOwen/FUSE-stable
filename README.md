@@ -4,12 +4,12 @@ This is the current stable version of FUSE, originally published in this paper: 
 
 https://pubs.rsc.org/en/content/articlelanding/2018/fd/c8fd00045j#!divAbstract
 
-the below readme is for version 1 of the code.
+the below readme is for version 1 of the code, which now lives in old_versions/ (see below) - it is no longer the current version.
 
-Version 2, located in the fuse_v2 folder has it's own readme and install instructions.
+Version 2 is the current version, and is what lives at the root of this repository (see README_v2.md for its own readme and install instructions).
 
 ********************************************************************************
-There are now three stable versions of FUSE available:
+There were three stable versions of FUSE v1, archived in old_versions/ (tagged v1.02-archive, v1.04-archive, v1.06-archive):
 
 102: The python3 implementation of the code presented in the original paper linked above
 

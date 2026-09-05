@@ -152,13 +152,13 @@ gen
 data/
 
 # fuse202 runtime caches, created on import via guarantee_existence() -
-# see fuse202/utils/directories.py and fuse202/constant.py
-fuse_v2/FUSE2p02/cache/
-fuse_v2/FUSE2p02/SPP_library/
+# see src/fuse202/utils/directories.py and src/fuse202/constant.py
+/cache/
+/SPP_library/
 
 # graphify knowledge-graph tool output (local artifact, not project source)
-graphify-out/
+/graphify-out/
 
-# manual unzip of the already-tracked fuse_v2/gnboss_template.zip - same
-# content, kept out of git so it isn't duplicated
-fuse_v2/gnboss_template/
+# manual unzip of the already-tracked gnboss_template.zip - same content,
+# kept out of git so it isn't duplicated
+/gnboss_template/
