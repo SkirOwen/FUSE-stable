@@ -1,123 +1,109 @@
-Last Updated: 22nd March 2023
+Last Updated: 29th January 2025
 
-This is the current stable version of FUSE, originally published in this paper: and is provided "as is" under the GNU public licence
+This is the current stable version of FUSE v.2, and is provided "as is" under the GNU public licence:
 
-https://pubs.rsc.org/en/content/articlelanding/2018/fd/c8fd00045j#!divAbstract
 
-the below readme is for version 1 of the code, which now lives in old_versions/ (see below) - it is no longer the current version.
+Version 2.02 and later are detailed in the following paper:
 
-Version 2 is the current version, and is what lives at the root of this repository (see README_v2.md for its own readme and install instructions).
+Faraday Discussions, 2024, DOI: 10.1039/D4FD00094C
 
-********************************************************************************
-There were three stable versions of FUSE v1, archived in old_versions/ (tagged v1.02-archive, v1.04-archive, v1.06-archive):
+Available as an open access article here:
 
-102: The python3 implementation of the code presented in the original paper linked above
+https://pubs.rsc.org/en/content/articlelanding/2024/fd/d4fd00094c#!divAbstract
 
-104: The main change to the code is the implementation of searches with compositions without needing to specify oxidation states,
-this results in FUSE treating all atoms in the same way, and is useful in systems where the number of cations greatly outnumbers 
-the number of anions
+We have tested FUSE v.2 primarily on Linux Desktops and clusters.
 
-106: The main changes from 104 above, is that the random structure generation has been re-written such that FUSE now samples more
-evenly from the number of available formular units, where as previously it was (un-intentionally) biased towards the smaller numbers
-of formula units. With the Basin hopping moves, the search routine has been altered such that when a chosen move fails to generate a valid
-structure, FUSE will attempt the same move several more times before choosing a different move. In order to offer more control over move 1 (swapping
-atoms between sub-modules), this has now been split into three moves (1, 8 and 9) where 1 = swap two atoms, 8 = swap 3 -> n atoms and 9 = swap all 
-atoms.
+We recommend setting up FUSE v.2 using Anaconda with python 3.9 or newer, as this allows you to easily create the virtual environment needed to setup the ML model used for structure generation.
 
 ********************************************************************************
 
-FUSE is dependant on the following packages:
+FUSE v.2 is dependent on the following packages:
 
-The atomic simulation environment (ase)
-Pandas 
+The atomic simulation environment (ase) version 23 or later
+Pandas
+spglib
+func_timeout
 
-both are available using pip
+all are available using pip
 
-FUSE also uses external chemistry codes in order to perform energy calculations, which you will need acess to in order to perform CSP calculations.
+FUSE also uses external chemistry codes in order to perform energy calculations, which you will need access to in order to perform CSP calculations.
 
-Currently, GULP and VASP are supported, with Quantum Espresso and CASTEP on the to-do list!
+Currently, GULP, VASP are supported, with Quantum Espresso implemented, but this has not been tested extensively.
 In principle, any calculator which is supported by ase should be useable (https://wiki.fysik.dtu.dk/ase/).
-If there is a currently un-supported calculator that you would like to use, please to get in touch!
+If there is a currently un-supported calculator that you would like to use, please get in touch!
+
+We have additionally implemented the use of the CHGNet ML potential published here by B. Deng et al. :
+
+https://www.nature.com/articles/s42256-023-00716-3
+
+This can be installed using pip:
+
+python -m pip install chgnet
 
 you can then install FUSE by typing:
 
-python -m pip install . 
+python -m pip install in the root python directory.
 
-in the root directory for FUSE.
+NOTE: I have found that our ChgNET calculator is incompatable with some versions of numpy. This will manefest as an numpy error 
+message after a ChgNET calculation finishs. I have fixed this previously by installing numpy==1.26.4, if needs be this can be done
+with:
 
-**********************************************************************************
-
-running FUSE
-
-to run FUSE, after configuring your energy calculator (see below), type:
-
-python < [MY INPUT FILE].py > [MY OUTPUT]
+python -m pip install numpy==1.26.4
 
 **********************************************************************************
 
-The input file:
+Installing the gnboss ML model.
 
-each input file starts with the import commands "from fuse_stable import *", "import sys" and "import time".
+The ML structure generater is replacated from the model presented in this paper by G. Cheng et al.:
 
-We this download, we have included example input files in the folder "examples".
+https://www.nature.com/articles/s41467-022-29241-4
 
-Below are the parameters which are common to any FUSE calculation:
+to install, first unpack the "resources/gnboss_template.zip" archive and go into the first directory.
 
-"composition" : this parameter sets the emperical formula for the calculation, this is in the format of a dictionary, where the keys are element symbols, and the values are a 2 element list: the number of atoms in the formula and the formal charge state,
-e.g. the formula SrO would be entered as: composition = {'Sr':[1,+2],'O':[1,-2]}
+create a fresh anaconda environment:
+```
+conda create --name gnboss python=3.6.13
+```
+activate the environment:
+```
+conda activate gnboss
+```
+then install the required packages:
+```
+python -m pip install -r requirements.txt
+```
+then deactivate the model by typing:
+```
+conda deactivate.
+```
+**********************************************************************************
 
-"rmax" : This is the parameter which controls the convergance of the basin hopping loop, FUSE counts how many structures since the current global minimum was found, once this count reaches rmax, the calculation will stop. For probe structure calculations, we will normally set this to somewhere between 500 - 1000
+To use the statistical proxy potential library provided, unzip the "resources/SPP_light.zip" and take note of path to the unpacked directory.
 
-"iterations" : This is the number of structures FUSE will relax for the given run
+The statistical proxy potentials are implemented for use with GULP, and are published in this paper by D. Antypov et al.:
 
-"restart" : If set to FALSE, FUSE starts a fresh calculation, if set to TRUE, FUSE will attempt to restart a previous run, note, if FUSE is unable to detect / read the restart files, it will start a fresh calculation
+https://chemrxiv.org/engage/chemrxiv/article-details/65292c4a8bab5d20554598dd
 
-"initial_gen" : This is the number of structures for FUSE to use in it's initial population. Typical values for this are 5 - 50
+**********************************************************************************
 
-"search_gen" : This is the number of structures FUSE will generate & relax at each step of the basin hopping routine, this is typically left at 1, but we have found it useful to increase this value for systems with a large number of atoms (e.g. > 50)
+Finally, to use all of the features for FUSE v.2, it is reccomended to set the following environment variables:
 
-"max_atoms" : This sets the maximum number of atoms which FUSE can use in a given structure, for probe structures, we will typically set this to < 70, but we have tested it for upto 300.
+for GULP:
+"ASE_GULP_COMMAND" : the path where your gulp executable can be found, followed by "gulp < gulp.gin > gulp.got"
+"GULP_LIB": This can be set to just empty quotation marks.
 
-"imax_atoms" : This controls the maximum number of atoms which FUSE can use in ONLY the structures in the initial population. Typically, this will be equal to max_atoms, however for systems containing greater than 50 atoms, it can often be useful to set imax_atoms to 50 (or equal to 1 formula unit, if the emperical formula contains more than 50 atoms!)
+for VASP:
+"VASP_PP_PATH": The path to the directory containing vasp pseudo-potentials
+"VASP_SCRIPT": The path to the python script for running vasp. For the example input files provieded here, this just needs to be "vasp.py"
 
-"ctype" : This tells FUSE which energy calculator to use, currently supported are "gulp" and "vasp"
+for using the gnboss ML model:
+"CONDA": that path to the location of your conda executable, this is required to run the ML structure geneartion model in it's seperate conda virtual environment. this is normally located in the directory that you have installed anaconda in the "bin" directory.
+"GNBOSS": the path to the virtual environment that you have created above for the gnboss model, this is typically located in the "envs" folder in the loaction that you have installed anaconda.
+"GNBOSS_TEMP": The path to the location of the gnboss template that you have unpacked above.
 
-Note: at the bottom of every input file, there is the call "run_fuse( .... " this calls the main FUSE function and is fed all of the option from the input file.
+for using statistical proxy potentials (this also requires GULP):
+"SPP_PATH": The path to the statistical proxy potential directory unpacked above, so that FUSE can asseble any required potential sets.
 
-***********************************************************************************
 
-GULP
 
-We have provided an example input file and interatomic potentials for running 20 atoms of SrTiO3, the interatomic potentials are taken from the original FUSE paper: https://pubs.rsc.org/en/content/articlelanding/2018/fd/c8fd00045j#!divAbstract
-
-Note, FUSE assumes that the GULP calculator is setup as per the instructions from ase (https://wiki.fysik.dtu.dk/ase/ase/calculators/gulp.html#module-ase.calculators.gulp)
-
-This covers the options which are specific to the GULP example input file:
-
-note, that with the GULP calculator in FUSE, it can run GULP multiple times on the same structure, this can often be useful to effciently relax structures.
-For each attempt you wish to do for each structure, you will need additional entries in "kwds" and "gulp_opts" below. In the example file supplied, we perform GULP calculations in two stages.
-
-"kwds" :  This is a list, with each element being a string containing the keywords to use in your GULP calculation, e.g. ("opti conp")
-
-"gulp_opts": This is a list, with each element being string of optional keywords for GULP, note, in order to correctly create a GULP input file, each option needs seperating by a \n to print it to a new line. (e.g. "\nlibrary lib2.lib \ndump temp.res")
-
-"lib" : This is to tell GULP the name of any interatomic potential library to use for the calculation, if it is supplied as part of the options above, this can be left as ''
-
-'shel' : This is a list of any elements which require a shell adding to them in GULP, (e.g. ['Ba']). If no shells are being used, leave as [''].
-
-***********************************************************************************
-
-TODO:
-
-Provide and example input file for using FUSE with VASP (along with update this file with the VASP options!). 
-
-Incorporate Quantum Espresso into FUSE (currently in testing stages)
-
-Incorporate CASTEP into FUSE
-
-***********************************************************************************
-
-KNOWN ISSUES
-
- - There seems to be an intermitant issue when using Linux / MAC machines where FUSE is unable to correctly read the output from GULP calculations, this manifests as each structure being listed as "failed" and the corrisponding energy set to 1E20 / number of atoms.
 

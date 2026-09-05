@@ -5,7 +5,7 @@ fuse202/structure/generate_random_structure.py and fuse202/structure/make_new_st
 Manual testing of run_fuse() (with a faked energy calculator, so no external
 binary was involved) hung indefinitely at "Generating Initial Population" for
 two different realistic-looking compositions (SrTiO3 and Ca3Ti2O7, using
-parameters straight out of example_input_files/fgen_input.py). Reading
+parameters straight out of examples/input_files/fgen_input.py). Reading
 the source shows why, and it's two compounding bugs:
 
 1. get_new_structure()'s `while gen == False:` loop (make_new_structure.py:43)

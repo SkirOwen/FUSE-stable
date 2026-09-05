@@ -159,6 +159,7 @@ data/
 # graphify knowledge-graph tool output (local artifact, not project source)
 /graphify-out/
 
-# manual unzip of the already-tracked gnboss_template.zip - same content,
-# kept out of git so it isn't duplicated
-/gnboss_template/
+# manual unzip of the already-tracked resources/gnboss_template.zip - same
+# content, kept out of git so it isn't duplicated (unanchored: matches
+# wherever someone unpacks it)
+gnboss_template/
