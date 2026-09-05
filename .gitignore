@@ -150,3 +150,8 @@ gen
 
 # Local project files
 data/
+
+# fuse202 runtime caches, created on import via guarantee_existence() -
+# see fuse202/utils/directories.py and fuse202/constant.py
+fuse_v2/FUSE2p02/cache/
+fuse_v2/FUSE2p02/SPP_library/
