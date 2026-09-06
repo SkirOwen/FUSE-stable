@@ -24,6 +24,8 @@ from ase.io import *
 from ase.visualize import *
 
 from fuse202.structure.assemble_spp import *
+from fuse202.structure.validation import check_relaxed_structure
+from fuse202.utils.file_ops import backup_restart_files
 from fuse202.utils.rng import Rng
 from fuse202.bonds.bond_table import BOND_DATA
 from fuse202.structure.extract_modules import *
@@ -1106,27 +1108,7 @@ def run_fuse(
 
 		# before running any structures, create a backup of the restart files
 		# print("I am here: ",os.getcwd())
-		os.chdir("restart")
-		backing = glob.glob("*")
-		for i in backing:
-			shutil.copy(i, "../backup/" + i)
-		os.chdir("../")
-		os.chdir("backup")
-		if not os.path.isdir("structures"):
-			os.mkdir("structures")
-		os.chdir("../")
-
-		os.chdir("structures")
-		backing = glob.glob("*.cif")
-		for i in backing:
-			shutil.copy(i, "../backup/structures/" + i)
-		del backing
-		os.chdir("../")
-		# make sure we also backup the unit cell shapes files
-		backing = glob.glob("*.p")
-		for i in backing:
-			shutil.copy(i, "backup/.")
-		del backing
+		backup_restart_files()
 
 		# print out which structure we're upto
 		### change this back to end="\r"
@@ -1173,30 +1155,12 @@ def run_fuse(
 			opt_device=opt_device, mode=mode, use_spglib=use_spglib,
 		)
 
-		# make sure we have the same number of atoms
-		if len(atoms) != iat:
-			converged = False
-			energy = 1.e20
-
-		# check for any unphysical distances:
-
-		temp_atoms = atoms.repeat([2, 2, 2])
-		# distances=min(get_distances(new_atoms=atoms))
-		# print (distances)
-		temp1 = temp_atoms.get_all_distances()
-		temp2 = []
-		for at in range(len(temp1)):
-			for at2 in range(len(temp1[at])):
-				if temp1[at][at2] != 0:
-					temp2.append(temp1[at][at2])
-		distances = min(temp2)
-		# print(distances,end=' ')
-		if distances <= dist_cutoff:
-			converged = False
-			energy = 1.e20
-
-		energy = energy / len(atoms)
-		energy = float(Decimal(energy).quantize(Decimal(str(e_prec))))
+		# reject structures that lost/gained atoms or have unphysical contacts,
+		# and convert the total energy to eV/atom
+		energy, converged = check_relaxed_structure(
+			atoms, energy, converged,
+			expected_atoms=iat, dist_cutoff=dist_cutoff, e_prec=e_prec,
+		)
 		t2a = time.time()
 		initial_population[keys_to_complete[0]]['atoms'] = atoms
 
@@ -1432,22 +1396,7 @@ def run_fuse(
 
 				# before running any structures, create a backup of the restart files
 				# print("I am here: ",os.getcwd())
-				os.chdir("restart")
-				backing = glob.glob("*")
-				for i in backing:
-					shutil.copy(i, "../backup/" + i)
-				os.chdir("../")
-				os.chdir("backup")
-				if not os.path.isdir("structures"):
-					os.mkdir("structures")
-				os.chdir("../")
-
-				os.chdir("structures")
-				backing = glob.glob("*.cif")
-				for i in backing:
-					shutil.copy(i, "../backup/structures/" + i)
-				del backing
-				os.chdir("../")
+				backup_restart_files()
 
 				# print out which structure we're upto
 				### change this back to end="\r"
@@ -1485,30 +1434,12 @@ def run_fuse(
 					opt_device=opt_device, mode=mode, use_spglib=use_spglib,
 				)
 
-				# check to make sure we still have the correct number of atoms!
-				if len(atoms) != iat:
-					converged = False
-					energy = 1.e20
-
-				# check for any unphysical distances:
-
-				temp_atoms = atoms.repeat([2, 2, 2])
-				# distances=min(get_distances(new_atoms=atoms))
-				# print (distances)
-				temp1 = temp_atoms.get_all_distances()
-				temp2 = []
-				for at in range(len(temp1)):
-					for at2 in range(len(temp1[at])):
-						if temp1[at][at2] != 0:
-							temp2.append(temp1[at][at2])
-				distances = min(temp2)
-				# print(distances,end=' ')
-				if distances <= dist_cutoff:
-					converged = False
-					energy = 1.e20
-
-				energy = energy / len(atoms)
-				energy = float(Decimal(energy).quantize(Decimal(str(e_prec))))
+				# reject structures that lost/gained atoms or have unphysical contacts,
+				# and convert the total energy to eV/atom
+				energy, converged = check_relaxed_structure(
+					atoms, energy, converged,
+					expected_atoms=iat, dist_cutoff=dist_cutoff, e_prec=e_prec,
+				)
 				t2a = time.time()
 				next_generation[keys_to_complete[0]]['atoms'] = atoms
 				energies[keys_to_complete[0]] = energy
