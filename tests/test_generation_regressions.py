@@ -178,12 +178,17 @@ def test_same_seed_reproduces_the_same_draws():
 
 @settings(max_examples=30, deadline=None)
 @given(seed=st.integers(min_value=0, max_value=2 ** 31 - 1))
-def test_choice_never_returns_numpy_types(seed):
-	"""numpy's own Generator.choice returns numpy scalars, and given a list of
-	lists it reinterprets the input as a 2-D array and hands back an ndarray
-	row. Numpy ints leaking into the structure string is exactly what broke
-	atom counting on Python 3.12+, so Rng.choice must return the original
-	objects untouched."""
+def test_draws_return_plain_python_objects(seed):
+	"""Rng must hand back exactly the objects it was given.
+
+	Trivially true of random.Random, and that is the point: it is what makes the
+	stdlib the right engine here. A numpy Generator would not - its `choice`
+	returns numpy scalars and reinterprets a list of lists as a 2-D array,
+	returning an ndarray row. Numpy integers leaking into the structure string
+	is what made `(120).__ne__(...)` return NotImplemented and silently break
+	atom counting on Python 3.12+, so this guards against swapping the engine
+	for one that reintroduces that.
+	"""
 	rng = Rng(seed)
 	assert type(rng.choice([1, 2, 3])) is int
 	assert type(rng.choice([[1, 2], [3, 4]])) is list
@@ -192,3 +197,14 @@ def test_choice_never_returns_numpy_types(seed):
 	rng.shuffle(shuffled)
 	assert all(type(x) is int for x in shuffled)
 	assert sorted(shuffled) == [1, 2, 3, 4, 5]
+
+
+def test_rng_reports_its_seed_even_when_unseeded():
+	"""An unseeded run still draws a concrete seed and reports it, so a result
+	can be reproduced after the fact. `seed_value`, not `seed`: the latter is
+	random.Random's own re-seeding method."""
+	assert Rng(1234).seed_value == 1234
+	drawn = Rng().seed_value
+	assert isinstance(drawn, int)
+	# and that reported seed genuinely reproduces the run
+	assert [Rng(drawn).random() for _ in range(5)] == [Rng(drawn).random() for _ in range(5)]

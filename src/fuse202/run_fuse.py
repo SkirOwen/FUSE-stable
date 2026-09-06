@@ -791,8 +791,8 @@ def run_fuse(
 	o.write("\n" + system_type_string)
 	print("ap calculated to be: " + str(ap) + " Angstroms")
 	o.write("\nap calculated to be: " + str(ap) + " Angstroms")
-	print(f"Random seed: {rng.seed}   (pass seed={rng.seed} to run_fuse() to repeat this run exactly)")
-	o.write(f"\nRandom seed: {rng.seed}   (pass seed={rng.seed} to run_fuse() to repeat this run exactly)")
+	print(f"Random seed: {rng.seed_value}   (pass seed={rng.seed_value} to run_fuse() to repeat this run exactly)")
+	o.write(f"\nRandom seed: {rng.seed_value}   (pass seed={rng.seed_value} to run_fuse() to repeat this run exactly)")
 
 	#### check the search type to be used #######################################
 	if swap_searches:
