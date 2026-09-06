@@ -546,7 +546,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/b3/0d/bf0567477f7281d9a
 
 [[package]]
 name = "fuse202"
-version = "2.2"
+version = "2.3"
 source = { editable = "." }
 dependencies = [
     { name = "ase" },
