@@ -1,14 +1,9 @@
 """Sanity checks applied to a structure after an energy calculation.
 
-A relaxation can hand back something physically meaningless - atoms lost or
-gained, or driven on top of each other - and an energy for it that would
-otherwise look attractive to the search. These checks reject those results by
-marking them unconverged and assigning the same large energy a failed
-calculation gets, so the search treats them as bad candidates rather than
-discoveries.
-
-run_fuse() applied this identical sequence in two places, once for the initial
-population and once in the basin-hopping search.
+A relaxation can return a physically meaningless structure, with atoms lost,
+gained, or driven on top of each other, together with an energy that would
+otherwise look attractive to the search. These checks reject such results so
+that the search treats them as bad candidates.
 """
 from __future__ import annotations
 
@@ -19,10 +14,20 @@ FAILED_ENERGY = 1.e20
 
 
 def shortest_interatomic_distance(atoms) -> float:
-	"""Shortest distance between any two atoms, across periodic images.
+	"""Return the shortest distance between any two atoms.
 
-	Uses a 2x2x2 supercell so contacts through the cell boundary are seen, and
-	ignores the zero self-distances on the diagonal.
+	A 2x2x2 supercell is used so that contacts through the periodic boundary
+	are included. Zero self distances on the diagonal are ignored.
+
+	Parameters
+	----------
+	atoms : ase.Atoms
+		The structure to measure.
+
+	Returns
+	-------
+	float
+		Shortest interatomic distance in Angstroms.
 	"""
 	repeated = atoms.repeat([2, 2, 2])
 	all_distances = repeated.get_all_distances()
@@ -32,7 +37,8 @@ def shortest_interatomic_distance(atoms) -> float:
 		for distance in row
 		if distance != 0
 	]
-	return min(non_zero)
+	shortest = min(non_zero)
+	return shortest
 
 
 def check_relaxed_structure(
@@ -44,15 +50,32 @@ def check_relaxed_structure(
 		dist_cutoff: float,
 		e_prec,
 ) -> tuple[float, bool]:
-	"""Validate a just-relaxed structure and normalise its energy.
+	"""Validate a relaxed structure and convert its energy to eV per atom.
 
-	Returns `(energy_per_atom, converged)`. A structure that lost or gained
-	atoms during relaxation, or that contains a contact at or below
-	`dist_cutoff`, is marked unconverged and given FAILED_ENERGY.
+	A structure that changed atom count during relaxation, or that contains a
+	contact at or below `dist_cutoff`, is marked unconverged and given
+	FAILED_ENERGY. The energy is divided by the atom count after any rejection,
+	so a rejected structure carries FAILED_ENERGY divided by its atom count.
 
-	Note the ordering, which is preserved from the original: the energy is
-	divided by the atom count *after* any rejection, so a rejected structure
-	carries FAILED_ENERGY/len(atoms) rather than FAILED_ENERGY itself.
+	Parameters
+	----------
+	atoms : ase.Atoms
+		The structure as returned by the calculator.
+	energy : float
+		Total energy reported by the calculator.
+	converged : bool
+		Whether the calculator reported convergence.
+	expected_atoms : int
+		Atom count the structure had before relaxation.
+	dist_cutoff : float
+		Shortest permitted interatomic contact, in Angstroms.
+	e_prec : float
+		Precision the energy is rounded to.
+
+	Returns
+	-------
+	tuple of (float, bool)
+		Energy in eV per atom, and the updated convergence flag.
 	"""
 	if len(atoms) != expected_atoms:
 		converged = False
@@ -62,10 +85,9 @@ def check_relaxed_structure(
 		converged = False
 		energy = FAILED_ENERGY
 
-	# float() before Decimal(): backends do not all return a Python float.
-	# CHGNet hands back numpy.float32, and Decimal refuses numpy types outright
-	# ("conversion from numpy.float32 to Decimal is not supported"), which made
-	# ctype='chgnet' fail on the first structure it ever relaxed.
-	energy = float(energy) / len(atoms)
-	energy = float(Decimal(energy).quantize(Decimal(str(e_prec))))
-	return energy, converged
+	# float() first: backends do not all return a Python float. CHGNet returns
+	# numpy.float32, which Decimal rejects outright.
+	energy_per_atom = float(energy) / len(atoms)
+	rounded = Decimal(energy_per_atom).quantize(Decimal(str(e_prec)))
+	energy_per_atom = float(rounded)
+	return energy_per_atom, converged

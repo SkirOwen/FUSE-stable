@@ -1,21 +1,9 @@
-"""Single place where FUSE hands a structure to an energy calculator.
+"""Single point at which FUSE hands a structure to an energy calculator.
 
-Every backend shares one contract - given an Atoms object, return
-`(atoms, energy, converged)` - so the choice between them is a lookup rather
-than anything structural. run_fuse() used to inline the same five-branch
-`if ctype == ...` chain twice, once for the initial population and once inside
-the basin-hopping search, and the two copies had already drifted apart: the
-search copy carried leftover debug prints and, more importantly, forgot to pass
-`use_spglib` to CHGNet, so a run with `use_spglib=False` quietly got the
-default of True for every structure the search relaxed.
-
-Failure convention, preserved from the original: any exception from a backend
-is turned into a rejected structure - the atoms are handed back untouched with
-`energy = 1e20` and `converged = False` - rather than aborting the run. A
-structure search is expected to propose things that make calculators fall over,
-so one bad candidate should cost one candidate, not the whole job. An
-unrecognised `ctype` produces the same result, which is also what the original
-if-chain did by falling through every branch.
+Every backend shares one contract: given an Atoms object, return
+`(atoms, energy, converged)`. Choosing between them is therefore a lookup
+rather than anything structural, and this module is the one place that lookup
+happens.
 """
 from __future__ import annotations
 
@@ -25,7 +13,7 @@ from fuse202.calculators.run_multiple_calculators import run_calculators
 from fuse202.calculators.run_qe import run_qe
 from fuse202.calculators.run_vasp import run_vasp
 
-# Energy assigned to a structure whose calculation failed - large enough that
+# Energy assigned to a structure whose calculation failed. Large enough that
 # the search will never prefer it.
 FAILED_ENERGY = 1.e20
 
@@ -62,9 +50,23 @@ def run_calculator(
 ) -> tuple:
 	"""Relax `atoms` with the calculator named by `ctype`.
 
-	Returns (atoms, energy, converged). On any failure - including an
-	unrecognised ctype - returns the atoms unchanged with FAILED_ENERGY and
-	converged=False.
+	A structure search is expected to propose structures that make calculators
+	fail, so any backend exception rejects that one structure rather than
+	aborting the run. An unrecognised `ctype` is treated the same way.
+
+	Parameters
+	----------
+	ctype : str
+		Which calculator to use. One of SUPPORTED_CALCULATORS.
+	atoms : ase.Atoms
+		The structure to relax.
+
+	Returns
+	-------
+	tuple of (ase.Atoms, float, bool)
+		The relaxed structure, its energy, and whether the calculation
+		converged. On any failure the atoms are returned unchanged with
+		FAILED_ENERGY and converged False.
 	"""
 	try:
 		if ctype == 'gulp':
@@ -101,10 +103,8 @@ def run_calculator(
 
 	except Exception:
 		# Deliberately broad: any backend failure rejects this one structure and
-		# the search moves on. Exception rather than a bare except, so
+		# the search moves on. Exception rather than a bare except, so that
 		# KeyboardInterrupt and SystemExit still stop the run.
 		return atoms, FAILED_ENERGY, False
 
-	# Unrecognised ctype - same outcome as a failure, matching what the original
-	# if-chain did when no branch matched.
 	return atoms, FAILED_ENERGY, False

@@ -7,12 +7,12 @@ Unlike the paper-reproduction inputs in examples/input_files/, this one needs
 install and configure separately; this uses the CHGNet machine-learned
 potential, which is an ordinary Python package installed by:
 
-    uv sync --extra ml
+	uv sync --extra ml
 
 Run it from a directory you don't mind filling with output files:
 
-    mkdir -p /tmp/fuse-quickstart && cd /tmp/fuse-quickstart
-    uv run --project /path/to/FUSE-stable python /path/to/examples/quickstart_chgnet.py
+	mkdir -p /tmp/fuse-quickstart && cd /tmp/fuse-quickstart
+	uv run --project /path/to/FUSE-stable python /path/to/examples/quickstart_chgnet.py
 
 It searches for structures of SrTiO3 (strontium titanate) and should finish in
 well under a minute. The settings below are deliberately tiny - enough to
@@ -23,10 +23,10 @@ What you should see, in order:
   - "Generating Initial Population", then each structure relaxed in turn
   - "Generation completed" with a lowest energy around -7 eV/atom
   - the basin-hopping search making moves, each named
-    (e.g. "move : 13 : Random new structure upto current size")
+	(e.g. "move : 13 : Random new structure upto current size")
   - structures/I-*.cif   the initial population
-    structures/S-*.cif   structures the search proposed
-    current_structure.cif, global_minimum.cif, output.txt
+	structures/S-*.cif   structures the search proposed
+	current_structure.cif, global_minimum.cif, output.txt
 
 If it finishes and writes those files, your installation is working. Both
 halves of FUSE - random structure generation and the basin-hopping search -
@@ -69,4 +69,4 @@ run_fuse(
 )
 
 print("\nQuickstart finished. If you see structures/*.cif and output.txt here, "
-      "your FUSE installation is working.")
+	"your FUSE installation is working.")

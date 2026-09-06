@@ -1,12 +1,9 @@
 """Command line entry point for FUSE.
 
-Deliberately small. A FUSE calculation is an ordinary Python script that calls
-run_fuse() (see examples/), which is the convention in this field and works
-well, so this does not try to wrap that. What it does provide is the one thing
-a script cannot: a way to answer "is my installation actually set up?" without
-starting a calculation and waiting to see what breaks.
-
-A fuller CLI is planned for v3.
+A FUSE calculation is an ordinary Python script that calls run_fuse(), so this
+module does not wrap that. It provides the one thing such a script cannot: a
+way to check whether an installation is set up, without starting a calculation
+and waiting to see what fails.
 """
 from __future__ import annotations
 
@@ -44,16 +41,28 @@ ENVIRONMENT_VARIABLES = [
 	("GNBOSS_TEMP", "unpacked gnboss template", True),
 ]
 
-TICK, CROSS, DASH = "ok  ", "MISSING", "--  "
+TICK, CROSS, ABSENT = "ok  ", "MISSING", "..  "
 
 
 def _check_import(module_name: str, distribution_name: str = "") -> tuple[bool, str]:
-	"""Import a module and report its version.
+	"""Import a module and report its installed version.
 
-	The version comes from the installed distribution metadata rather than a
-	__version__ attribute, because not every package exposes one (pymatgen does
-	not) and the distribution name is not always the import name
-	(func-timeout / func_timeout).
+	The version comes from distribution metadata rather than a `__version__`
+	attribute, because not every package exposes one and the distribution name
+	is not always the import name.
+
+	Parameters
+	----------
+	module_name : str
+		Name to import.
+	distribution_name : str
+		Installed distribution to read the version from. Defaults to
+		`module_name`.
+
+	Returns
+	-------
+	tuple of (bool, str)
+		Whether the import succeeded, and the version or an error summary.
 	"""
 	try:
 		importlib.import_module(module_name)
@@ -66,12 +75,16 @@ def _check_import(module_name: str, distribution_name: str = "") -> tuple[bool, 
 
 
 def check(argv=None) -> int:
-	"""Report what is installed and what FUSE can therefore run.
+	"""Report what is installed and which calculators are available.
 
-	Exit status is 0 when the core installation is usable, 1 when something the
-	package cannot work without is missing. A missing external chemistry code is
-	*not* an error - plenty of people only want CHGNet - so those are reported
-	but do not affect the status.
+	A missing external chemistry code is not an error, since CHGNet alone is
+	enough to run, so those are reported without affecting the exit status.
+
+	Returns
+	-------
+	int
+		0 when the core installation is usable, 1 when something the package
+		cannot work without is missing.
 	"""
 	print("FUSE installation check")
 	print("=" * 60)
@@ -86,7 +99,7 @@ def check(argv=None) -> int:
 		print(f"[{CROSS}] fuse202 could not be imported: {detail}")
 		problems.append("the fuse202 package itself could not be imported")
 
-	print(f"\nCore dependencies (needed for any run)")
+	print("\nCore dependencies (needed for any run)")
 	for module_name, distribution, label, purpose in CORE_DEPENDENCIES:
 		ok, detail = _check_import(module_name, distribution)
 		if ok:
@@ -95,28 +108,28 @@ def check(argv=None) -> int:
 			print(f"  [{CROSS}] {label:<32} needed for: {purpose}")
 			problems.append(f"{label} is not installed")
 
-	print(f"\nML potential (optional - install with: uv sync --extra ml)")
+	print("\nML potential (optional, install with: uv sync --extra ml)")
 	ml_ok = True
 	for module_name, distribution, label, purpose in ML_DEPENDENCIES:
 		ok, detail = _check_import(module_name, distribution)
-		print(f"  [{TICK if ok else DASH}] {label:<32} {detail if ok else 'not installed'}")
+		print(f"  [{TICK if ok else ABSENT}] {label:<32} {detail if ok else 'not installed'}")
 		ml_ok &= ok
 
-	print(f"\nExternal chemistry codes (optional - each enables one calculator)")
+	print("\nExternal chemistry codes (optional, each enables one calculator)")
 	gulp_command = os.environ.get("ASE_GULP_COMMAND", "")
 	gulp_binary = shutil.which("gulp")
 	gulp_ok = bool(gulp_command or gulp_binary)
-	print(f"  [{TICK if gulp_ok else DASH}] GULP                             "
-	      f"{'found' if gulp_ok else 'not found (set ASE_GULP_COMMAND)'}")
+	gulp_status = "found" if gulp_ok else "not found (set ASE_GULP_COMMAND)"
+	print(f"  [{TICK if gulp_ok else ABSENT}] GULP                             {gulp_status}")
 	vasp_ok = bool(os.environ.get("VASP_PP_PATH") and os.environ.get("VASP_SCRIPT"))
-	print(f"  [{TICK if vasp_ok else DASH}] VASP                             "
-	      f"{'configured' if vasp_ok else 'not configured (set VASP_PP_PATH, VASP_SCRIPT)'}")
+	vasp_status = "configured" if vasp_ok else "not configured (set VASP_PP_PATH, VASP_SCRIPT)"
+	print(f"  [{TICK if vasp_ok else ABSENT}] VASP                             {vasp_status}")
 
-	print(f"\nEnvironment variables")
+	print("\nEnvironment variables")
 	for name, purpose, read_by_fuse in ENVIRONMENT_VARIABLES:
 		value = os.environ.get(name)
-		marker = TICK if value else DASH
-		shown = (value[:34] + "...") if value and len(value) > 37 else (value or f"unset - {purpose}")
+		marker = TICK if value else ABSENT
+		shown = (value[:34] + "...") if value and len(value) > 37 else (value or f"unset. {purpose}")
 		print(f"  [{marker}] {name:<20} {shown}")
 
 	# what does all of that add up to
@@ -155,7 +168,7 @@ def main(argv=None) -> int:
 	parser = argparse.ArgumentParser(
 		prog="fuse202",
 		description="Flexible Unit Structure Engine. To run a calculation, write a "
-		            "Python script that calls run_fuse() - see examples/.",
+		            "Python script that calls run_fuse(). See examples/.",
 	)
 	subparsers = parser.add_subparsers(dest="command")
 	subparsers.add_parser("check", help="report what is installed and what FUSE can run")
