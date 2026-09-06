@@ -195,6 +195,7 @@ to change behaviour, deliberately left alone.
 | 50 bare `except:` | Narrow each to the exception actually expected. Several are load-bearing, the calculator dispatch deliberately rejects a structure rather than aborting a run, so each needs reading, not a blanket edit |
 | `test_bonds.py` is production code named like a test file | Rename to `bond_checks.py`. Pytest already has to be told not to collect it |
 | `_test_bonds()` dead alongside `test_bonds()`; empty `class Fuse`; `assemble_structure_2.py` vs `assemble_structure_generator.py` | Delete the dead, resolve the duplicate by checking which is reachable |
+| `make_basin_move` contains an unfinished second implementation of move 8, disabled by writing `if move == 100:` when moves only ever run 1 to 14. Around 100 lines, never executed | Decide whether the idea (accounting for where the atom nearest the origin sits) is wanted. Finish it behind a real flag or delete it; leaving unreachable code that looks live is worse than either |
 | Structure-generation success depends on rejection sampling that can take thousands of attempts | Not a bug, but worth measuring: with the fixes in place, how often does generation succeed per attempt, and can the constraints be applied earlier? |
 
 ## Telling users when results differ

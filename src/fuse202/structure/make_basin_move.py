@@ -5,6 +5,7 @@ import sys
 from ase.atoms import *
 from ase.io import *
 from ase.visualize import *
+from fuse202.domain.structure import Structure
 from fuse202.structure.assemble_structure_2 import *
 from fuse202.structure.extract_modules import *
 from fuse202.structure.make_new_structure import *
@@ -940,10 +941,12 @@ def make_basin_move(
 
 			# now need to go and rebuild the new atoms object
 
-			t = {'modules': swapped_modules,
-			     'sub module cell': start_point['sub module cell'],
-			     'shape in submods': start_point['shape in submods'],
-			     'ap': start_point['ap']}
+			t = Structure(
+				modules=swapped_modules,
+				sub_module_cell=start_point['sub module cell'],
+				shape_in_submods=start_point['shape in submods'],
+				ap=start_point['ap'],
+			)
 
 			# put the atoms obeject together and error check it
 
@@ -1061,10 +1064,12 @@ def make_basin_move(
 					sub_mods_2.append(j)
 
 			# now build the temporary structure object to pass to assemble structure
-			t = {'modules': sub_mods_2.copy(),
-			     'sub module cell': start_point['sub module cell'].copy(),
-			     'shape in submods': start_point['shape in submods'].copy(),
-			     'ap': start_point['ap']}
+			t = Structure(
+				modules=sub_mods_2.copy(),
+				sub_module_cell=start_point['sub module cell'].copy(),
+				shape_in_submods=start_point['shape in submods'].copy(),
+				ap=start_point['ap'],
+			)
 			ap = t['ap']
 			target_number_atoms = len(current_structure['atoms'])
 			# check_bonds=False
@@ -1112,6 +1117,11 @@ def make_basin_move(
 		###########################################################################
 
 		##########################################################################
+		# DEAD CODE: move is drawn from n_moves, whose keys are 1 to 14, so this
+		# branch can never run. It is an unfinished alternative to move 8 that
+		# accounts for where the atom closest to the origin sits, disabled by
+		# changing the condition to an unreachable value rather than removing it.
+		# Either finish it or delete it; see docs/v3-design.md.
 		if move == 100:  # 8. find two full slices/modules in the structure and switch their positions version taking into account the difference in where the atom closest to the origin is
 			start_point = current_structure.copy()
 			shape = start_point['shape in submods']
@@ -1178,20 +1188,24 @@ def make_basin_move(
 			layer_shape = start_point['shape in submods'].copy()
 			layer_shape[2] = 1
 
-			l1 = {'modules': modules[c1],
-			      'sub module cell': start_point['sub module cell'],
-			      'shape in submods': layer_shape,
-			      'ap': start_point['ap']}
+			l1 = Structure(
+				modules=modules[c1],
+				sub_module_cell=start_point['sub module cell'],
+				shape_in_submods=layer_shape,
+				ap=start_point['ap'],
+			)
 
 			layer1 = assemble_structure2(l1)
 
 			# view(layer1)
 
 			# build layer 2
-			l2 = {'modules': modules[c2],
-			      'sub module cell': start_point['sub module cell'],
-			      'shape in submods': layer_shape,
-			      'ap': start_point['ap']}
+			l2 = Structure(
+				modules=modules[c2],
+				sub_module_cell=start_point['sub module cell'],
+				shape_in_submods=layer_shape,
+				ap=start_point['ap'],
+			)
 
 			layer2 = assemble_structure2(l2)
 
@@ -1252,10 +1266,12 @@ def make_basin_move(
 					sub_mods_2.append(j)
 
 			# now build the temporary structure object to pass to assemble structure
-			t = {'modules': sub_mods_2,
-			     'sub module cell': start_point['sub module cell'],
-			     'shape in submods': start_point['shape in submods'],
-			     'ap': start_point['ap']}
+			t = Structure(
+				modules=sub_mods_2,
+				sub_module_cell=start_point['sub module cell'],
+				shape_in_submods=start_point['shape in submods'],
+				ap=start_point['ap'],
+			)
 			ap = t['ap']
 			target_number_atoms = len(start_point['atoms'])
 			# check_bonds=False
@@ -1363,10 +1379,12 @@ def make_basin_move(
 			# print(new_cell)
 
 			# set up the new structure object:
-			t = {'modules': start_point['modules'].copy(),
-			     'sub module cell': start_point['sub module cell'].copy(),
-			     'shape in submods': new_cell,
-			     'ap': start_point['ap']}
+			t = Structure(
+				modules=start_point['modules'].copy(),
+				sub_module_cell=start_point['sub module cell'].copy(),
+				shape_in_submods=new_cell,
+				ap=start_point['ap'],
+			)
 			ap = t['ap']
 			target_number_atoms = len(start_point['atoms'])
 
@@ -1955,10 +1973,12 @@ def make_basin_move(
 			temp = start_point.copy()
 			temp['modules'][m1] = m2
 
-			t = {'modules': temp['modules'],
-			     'sub module cell': start_point['sub module cell'],
-			     'shape in submods': start_point['shape in submods'],
-			     'ap': start_point['ap']}
+			t = Structure(
+				modules=temp['modules'],
+				sub_module_cell=start_point['sub module cell'],
+				shape_in_submods=start_point['shape in submods'],
+				ap=start_point['ap'],
+			)
 
 			# put the atoms obeject together and error check it
 
