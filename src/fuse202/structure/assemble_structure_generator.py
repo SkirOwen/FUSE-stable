@@ -3,12 +3,14 @@ import sys
 import warnings
 from ase import *
 from ase.visualize import *
-from random import shuffle
+from fuse202.utils.rng import default_rng
 
 
 # function to create atoms object from a set of assembly instructions and a string
 # of atomic numbers
-def assemble_structure(string, instructions):
+def assemble_structure(string, instructions, rng=None):
+	if rng is None:
+		rng = default_rng()
 	temp_string = string.copy()
 	### reading assembly instructions ###########################################
 	ap = instructions[0]  # lattce parameter

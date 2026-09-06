@@ -3,7 +3,6 @@ import glob
 import math
 import os
 import pickle
-import random
 import shutil
 
 import statistics
@@ -12,7 +11,6 @@ import time
 import warnings
 
 from decimal import Decimal
-from random import choice
 
 import fuse202.bonds.bond_table
 import numpy
@@ -26,6 +24,7 @@ from ase.io import *
 from ase.visualize import *
 
 from fuse202.structure.assemble_spp import *
+from fuse202.utils.rng import Rng
 from fuse202.bonds.bond_table import BOND_DATA
 from fuse202.structure.extract_modules import *
 from fuse202.structure.generate_random_structure import *
@@ -216,9 +215,17 @@ def run_fuse(
 		},
 		opt_class=['FIRE', 'BFGSLineSearch'],
 		opt_device='cpu',  # Device to use for chgnet optimisation, 'cpu' or 'cuda'
-		mode='relax'  # set the calculation mode for chgnet, other option is 'single'
+		mode='relax',  # set the calculation mode for chgnet, other option is 'single'
+
+		# reproducibility
+		seed=None,
+		# seed for the random number generator. Leave as None for a different search
+		# each run; set it to an integer to repeat a previous run exactly. The seed
+		# actually used is always printed and written to the output file, so even an
+		# unseeded run can be reproduced after the fact.
 ):
 	t0 = time.time()
+	rng = Rng(seed)
 	################################################################################
 
 	print(
@@ -784,6 +791,8 @@ def run_fuse(
 	o.write("\n" + system_type_string)
 	print("ap calculated to be: " + str(ap) + " Angstroms")
 	o.write("\nap calculated to be: " + str(ap) + " Angstroms")
+	print(f"Random seed: {rng.seed}   (pass seed={rng.seed} to run_fuse() to repeat this run exactly)")
+	o.write(f"\nRandom seed: {rng.seed}   (pass seed={rng.seed} to run_fuse() to repeat this run exactly)")
 
 	#### check the search type to be used #######################################
 	if swap_searches:
@@ -834,7 +843,7 @@ def run_fuse(
 				# if we want to pull structures in a random order do this:
 				if pull_random:
 					# shuffle the order in which the cifs are read in, so that if we have more reference structures than we can use in the initial population, they are drawn in a random order, with the remainder retained for later
-					random.shuffle(cifs)
+					rng.shuffle(cifs)
 
 				# if we want to pull pre-built structures by an energy ranking from spps.
 				elif pull_spp_rank:
@@ -1025,7 +1034,8 @@ def run_fuse(
 					ideal_density=ideal_density,
 					fu=fu,
 					ap=ap,
-					use_spglib=use_spglib
+					use_spglib=use_spglib,
+					rng=rng,
 				)
 
 			# flag that the structure has not been optimised, and set energy to zero
@@ -1419,7 +1429,8 @@ def run_fuse(
 							monoclinic_solutions,
 							max_atoms, max_ax, vac_ratio, using_prebuilt, pre_built_structures, max_fus,
 							atoms_per_fu,
-							imax_atoms, use_spglib, initial_population
+							imax_atoms, use_spglib, initial_population,
+							rng=rng,
 						)
 
 						# print("end atoms", len(trial['atoms']) )
@@ -1706,7 +1717,7 @@ def run_fuse(
 					# only test this part if the energy is higher than current
 					if dE_curr >= 0.:
 						if dE_curr > 0.:
-							rand = random.random()
+							rand = rng.random()
 							Test = math.exp(-dE_curr / T)
 							# If this, accept the new structure
 							if Test >= rand:
@@ -1723,7 +1734,7 @@ def run_fuse(
 					# check to see if the system needs to be melted
 					if accept_move == False:
 						if ca >= melt_threshold:
-							T += random.random() / 100
+							T += rng.random() / 100
 							moves = r_moves
 
 					# check to see if the BH rountine has comverged:

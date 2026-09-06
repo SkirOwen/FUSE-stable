@@ -1,6 +1,6 @@
 import pickle
 import sys
-from random import choice
+from fuse202.utils.rng import default_rng
 
 
 def return_factors(x):
@@ -14,7 +14,9 @@ def return_factors(x):
 
 ### function to generate a random set of assembly instructions for a crystal structure
 def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions, hexagonal_solutions,
-                               orthorhombic_solutions, monoclinic_solutions, instructions):
+                               orthorhombic_solutions, monoclinic_solutions, instructions, rng=None):
+	if rng is None:
+		rng = default_rng()
 	# print(len(instructions))
 
 	# print(instructions)
@@ -87,7 +89,7 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 		# string of six flags, one for cubic, tetragonal, hexagonal, orthorhombic, monoclinic and triclinic lattices
 		num_poss = [i for i, x in enumerate(possible) if x == 1]
 		# print(num_poss)
-		lattice = choice(num_poss)
+		lattice = rng.choice(num_poss)
 		# 0 = cubic
 		# 1 = tetragonal
 		# 2 = hexagonal
@@ -105,32 +107,32 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 			angles = [90, 90, 90]
 
 		if lattice == 1:  # tetragonal
-			cell = choice(tetragonal_solution)
+			cell = rng.choice(tetragonal_solution)
 			full = [cell[0], cell[0], cell[1]]
 			angles = [90, 90, 90]
 
 		if lattice == 2:  # hexagonal
-			cell = choice(hexagonal_solution)
+			cell = rng.choice(hexagonal_solution)
 			full = [cell[0], cell[0], cell[1]]
 			angles = [90, 90, 120]
 
 		if lattice == 3:  # orthorhombic
-			cell = choice(orthorhombic_solution)
+			cell = rng.choice(orthorhombic_solution)
 			full = [cell[0], cell[1], cell[2]]
 			angles = [90, 90, 90]
 
 		if lattice == 4:  # monoclinic
-			cell = choice(monoclinic_solution)
+			cell = rng.choice(monoclinic_solution)
 			full = [cell[0], cell[1], cell[2]]
 			angles = [90, 90, 120]
 
 		if lattice == 5:  # triclinic
-			cell = choice(monoclinic_solution)
+			cell = rng.choice(monoclinic_solution)
 			full = [cell[0], cell[1], cell[2]]
 			if full[2] % 2 == 0:
-				angles = [choice([60, 75, 90, 105, 120, 150]), choice([60, 75, 90, 105, 120, 150]), choice([90, 120])]
+				angles = [rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([90, 120])]
 			else:
-				angles = [choice([60, 75, 90, 105, 120, 150]), choice([60, 75, 90, 105, 120, 150]), 120]
+				angles = [rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([60, 75, 90, 105, 120, 150]), 120]
 
 		# add in the cell dimensions into the instructions ##########################
 		for i in range(len(full)):
@@ -151,32 +153,32 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 			angles = [90, 90, 90]
 
 		if lattice == 1:  # tetragonal
-			cell = choice(tetragonal_solutions[nsub])
+			cell = rng.choice(tetragonal_solutions[nsub])
 			full = [cell[0], cell[0], cell[1]]
 			angles = [90, 90, 90]
 
 		if lattice == 2:  # hexagonal
-			cell = choice(hexagonal_solutions[nsub])
+			cell = rng.choice(hexagonal_solutions[nsub])
 			full = [cell[0], cell[0], cell[1]]
 			angles = [90, 90, 120]
 
 		if lattice == 3:  # orthorhombic
-			cell = choice(orthorhombic_solutions[nsub])
+			cell = rng.choice(orthorhombic_solutions[nsub])
 			full = [cell[0], cell[1], cell[2]]
 			angles = [90, 90, 90]
 
 		if lattice == 4:  # monoclinic
-			cell = choice(monoclinic_solutions[nsub])
+			cell = rng.choice(monoclinic_solutions[nsub])
 			full = [cell[0], cell[1], cell[2]]
 			angles = [90, 90, 120]
 
 		if lattice == 5:  # triclinic
-			cell = choice(monoclinic_solutions[nsub])
+			cell = rng.choice(monoclinic_solutions[nsub])
 			full = [cell[0], cell[1], cell[2]]
 			if full[2] % 2 == 0:
-				angles = [choice([60, 75, 90, 105, 120, 150]), choice([60, 75, 90, 105, 120, 150]), choice([90, 120])]
+				angles = [rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([90, 120])]
 			else:
-				angles = [choice([60, 75, 90, 105, 120, 150]), choice([60, 75, 90, 105, 120, 150]), 120]
+				angles = [rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([60, 75, 90, 105, 120, 150]), 120]
 
 		# add in the cell dimensions into the instructions ##########################
 		for i in range(len(full)):
@@ -204,9 +206,9 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 				if i == 0:
 					trans_pattern.append(0)
 				elif i != full[2] - 1:
-					c = choice([0, 1, 2])
+					c = rng.choice([0, 1, 2])
 					while c == trans_pattern[-1]:
-						c = choice([0, 1, 2])
+						c = rng.choice([0, 1, 2])
 					trans_pattern.append(c)
 				if i == (full[2] - 1):
 					temp = [0, 1, 2]
@@ -218,7 +220,7 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 						temp.remove(trans_pattern[-1])
 					except:
 						pass
-					trans_pattern.append(choice(temp))
+					trans_pattern.append(rng.choice(temp))
 
 		else:  # triclinic lattice
 			if angles[-1] == 90:
@@ -235,9 +237,9 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 					if i == 0:
 						trans_pattern.append(0)
 					elif i != full[2] - 1:
-						c = choice([0, 1, 2])
+						c = rng.choice([0, 1, 2])
 						while c == trans_pattern[-1]:
-							c = choice([0, 1, 2])
+							c = rng.choice([0, 1, 2])
 						trans_pattern.append(c)
 					if i == (full[2] - 1):
 						temp = [0, 1, 2]
@@ -249,7 +251,7 @@ def create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions
 							temp.remove(trans_pattern[-1])
 						except:
 							pass
-						trans_pattern.append(choice(temp))
+						trans_pattern.append(rng.choice(temp))
 
 	if full[2] == 1:
 		trans_pattern = [0]

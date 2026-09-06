@@ -5,6 +5,7 @@ from fuse202.structure.assemble_structure_generator import *
 from fuse202.structure.create_random_instructions import *
 from fuse202.structure.create_random_string import *
 from fuse202.structure.error_check_structure import *
+from fuse202.utils.rng import default_rng
 
 
 def generate_random_structure(
@@ -28,8 +29,12 @@ def generate_random_structure(
 		dist_cutoff,
 		vac_ratio='',
 		max_fus='',
-		target_number_atoms=''
+		target_number_atoms='',
+		rng=None
 ):
+	if rng is None:
+		rng = default_rng()
+
 	accept = 0
 	n_atoms = 0
 	complete = False
@@ -82,7 +87,8 @@ def generate_random_structure(
 				max_fus=max_fus,
 				system_type=system_type,
 				composition=composition,
-				ap=ap
+				ap=ap,
+				rng=rng,
 			)
 		except Exception:
 			continue
@@ -91,7 +97,7 @@ def generate_random_structure(
 		# print("hello2")
 		instructions = create_random_instructions(string, ap, cubic_solutions, tetragonal_solutions,
 		                                          hexagonal_solutions, orthorhombic_solutions, monoclinic_solutions,
-		                                          instructions)
+		                                          instructions, rng=rng)
 		# print("instructions: \n",instructions)
 
 		# print("atoms: \n",atoms)
@@ -112,7 +118,7 @@ def generate_random_structure(
 		n_atoms = 0 if string is None else len([atom for atom in string if atom != 120])
 
 		try:
-			atoms, instructions = assemble_structure(string, instructions)
+			atoms, instructions = assemble_structure(string, instructions, rng=rng)
 		except Exception:
 			continue
 

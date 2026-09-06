@@ -1,6 +1,5 @@
 import math
 import os
-import random
 import sys
 
 from ase.atoms import *
@@ -9,7 +8,7 @@ from ase.visualize import *
 from fuse202.structure.assemble_structure_2 import *
 from fuse202.structure.extract_modules import *
 from fuse202.structure.make_new_structure import *
-from random import shuffle
+from fuse202.utils.rng import default_rng
 
 
 def make_basin_move(
@@ -41,8 +40,11 @@ def make_basin_move(
 		atoms_per_fu,
 		imax_atoms,
 		use_spglib,
-		initial_population
+		initial_population,
+		rng=None
 ):
+	if rng is None:
+		rng = default_rng()
 	# set this to keep attempting moves until we make a valid move
 	complete = False
 
@@ -75,15 +77,15 @@ def make_basin_move(
 	# Each move id repeated as many times as its weight in `moves`. 28 later call
 	# sites draw from this list to redraw a different move when the chosen one
 	# turns out not to apply (wrong number of atoms, too few elements, etc.).
-	# A refactor replaced only the *first* pick below with random.choices() and
+	# A refactor replaced only the *first* pick below with rng.choices() and
 	# commented this population out, leaving the list permanently empty - so
-	# every one of those redraw paths hit `choice([])` and crashed the run with
+	# every one of those redraw paths hit `rng.choice([])` and crashed the run with
 	# "Cannot choose from an empty sequence".
 	moves_to_choose = [move_id for move_id, weight in moves.items() for _ in range(weight)]
 
-	# Equivalent to choice(moves_to_choose), since the list already encodes the
+	# Equivalent to rng.choice(moves_to_choose), since the list already encodes the
 	# weights by repetition.
-	move = random.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
+	move = rng.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
 
 	# *** remember to remove this
 	# move = 10
@@ -102,20 +104,20 @@ def make_basin_move(
 
 			# if we're dealing with an element, redraw a move and continue
 			if len(syms) == 1:
-				move = random.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
+				move = rng.choices(list(moves.keys()), weights=list(moves.values()), k=1)[0]
 				continue
 
 			if len(syms) > 1:
 
 				# First choose two different atoms in the structure & swap their symbol
 
-				a1 = [choice(list(range(len(atoms))))]
-				a2 = [choice(list(range(len(atoms))))]
+				a1 = [rng.choice(list(range(len(atoms))))]
+				a2 = [rng.choice(list(range(len(atoms))))]
 				a1.append(atoms[a1[0]].symbol)
 				a2.append(atoms[a2[0]].symbol)
 
 				while a1[1] == a2[1]:
-					a2 = [choice(list(range(len(atoms))))]
+					a2 = [rng.choice(list(range(len(atoms))))]
 					a2.append(atoms[a2[0]].symbol)
 
 				# now we've got our two atoms, swap them in the structure
@@ -189,8 +191,8 @@ def make_basin_move(
 			# now, if there are any viable points, choose a point and an atom and move it
 
 			if len(viable) > 0:
-				point = choice(viable)
-				at = choice(list(range(len(atoms))))
+				point = rng.choice(viable)
+				at = rng.choice(list(range(len(atoms))))
 				atoms[at].position = point
 
 				# before we pass the structure back, check that we have a set of atoms which is consistent with the input composition
@@ -212,7 +214,7 @@ def make_basin_move(
 
 			# if we have no viable points, redraw the move type and continue:
 			if len(viable) == 0:
-				move = move = choice(moves_to_choose)
+				move = move = rng.choice(moves_to_choose)
 				continue
 
 		# view(temp_atoms)
@@ -233,12 +235,12 @@ def make_basin_move(
 
 			# if we're dealing with an element, redraw a move and continue
 			if len(syms) == 1:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# we obviously need more than 3 atoms in the structure to make this move
 			if len(atoms) <= 3:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# then if we have enough atoms / species, get swapping!
@@ -246,17 +248,17 @@ def make_basin_move(
 			# flag to say we're ready to change the atoms objecct
 			ready = False
 			while ready == False:
-				to_swap = choice(list(range(3, len(atoms))))
+				to_swap = rng.choice(list(range(3, len(atoms))))
 
 				pool = list(range(len(atoms)))
-				chosen = [[choice(pool)]]
+				chosen = [[rng.choice(pool)]]
 				del pool[chosen[0][0]]
 				unique_syms = []
 				# print(chosen[0])
 				# print(atoms[chosen[0]])
 				chosen[0].append(atoms[chosen[0]].symbols[0])
 				for i in range(to_swap - 1):
-					c = [choice(pool)]
+					c = [rng.choice(pool)]
 					del pool[pool.index(c[0])]
 					c.append(atoms[c[0]].symbol)
 					chosen.append(c)
@@ -278,7 +280,7 @@ def make_basin_move(
 			o_symbols = symbols.copy()
 
 			while o_symbols == symbols:
-				shuffle(symbols)
+				rng.shuffle(symbols)
 
 			for i in range(len(indicies)):
 				c = [indicies[i], symbols[i]]
@@ -319,12 +321,12 @@ def make_basin_move(
 
 			# if we're dealing with an element, redraw a move and continue
 			if len(syms) == 1:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# we obviously need more than 3 atoms in the structure to make this move, if == 3, need to swap all
 			if len(atoms) <= 3:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# then if we have enough atoms / species, get swapping!
@@ -335,14 +337,14 @@ def make_basin_move(
 				to_swap = len(atoms)
 
 				pool = list(range(len(atoms)))
-				chosen = [[choice(pool)]]
+				chosen = [[rng.choice(pool)]]
 				del pool[chosen[0][0]]
 				unique_syms = []
 				# print(chosen[0])
 				# print(atoms[chosen[0]])
 				chosen[0].append(atoms[chosen[0]].symbols[0])
 				for i in range(to_swap - 1):
-					c = [choice(pool)]
+					c = [rng.choice(pool)]
 					del pool[pool.index(c[0])]
 					c.append(atoms[c[0]].symbol)
 					chosen.append(c)
@@ -364,7 +366,7 @@ def make_basin_move(
 			o_symbols = symbols.copy()
 
 			while o_symbols == symbols:
-				shuffle(symbols)
+				rng.shuffle(symbols)
 
 			for i in range(len(indicies)):
 				c = [indicies[i], symbols[i]]
@@ -414,12 +416,12 @@ def make_basin_move(
 
 			# if we're dealing with an element, redraw a move and continue
 			if len(syms) == 1:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# we obviously need more than 3 atoms in the structure to make this move, if there are only three, it would need to be the swap all
 			if len(atoms) <= 3:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# print(len(atoms))
@@ -429,17 +431,17 @@ def make_basin_move(
 			ready = False
 			while ready == False:
 
-				to_swap = choice(list(range(3, len(atoms))))
+				to_swap = rng.choice(list(range(3, len(atoms))))
 
 				pool = list(range(len(atoms)))
-				chosen = [[choice(pool)]]
+				chosen = [[rng.choice(pool)]]
 				del pool[chosen[0][0]]
 				unique_syms = []
 				# print(chosen[0])
 				# print(atoms[chosen[0]])
 				chosen[0].append(atoms[chosen[0]].symbols[0])
 				for i in range(to_swap - 1):
-					c = [choice(pool)]
+					c = [rng.choice(pool)]
 					del pool[pool.index(c[0])]
 					c.append(atoms[c[0]].symbol)
 					chosen.append(c)
@@ -498,7 +500,7 @@ def make_basin_move(
 				sites = []
 				vacs = []
 				for i in range(len(chosen)):
-					c = random.random()
+					c = rng.random()
 					# go with a 50:50 choice between the two
 					if c < 0.5:
 						sites.append(chosen[i])
@@ -527,7 +529,7 @@ def make_basin_move(
 						fail = True
 						break
 
-					vac = choice(all_vacs)
+					vac = rng.choice(all_vacs)
 					temp_atoms = atoms.copy()
 					temp_atoms[i[0]].position = vac
 					distances = temp_atoms.get_distances(i[0], list(range(len(temp_atoms))), mic=True)
@@ -550,7 +552,7 @@ def make_basin_move(
 					break
 
 			if fail == True:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# first choose a vacency
@@ -569,7 +571,7 @@ def make_basin_move(
 			o_symbols = symbols.copy()
 
 			while o_symbols == symbols:
-				shuffle(symbols)
+				rng.shuffle(symbols)
 
 			for i in range(len(indicies)):
 				c = [indicies[i], symbols[i]]
@@ -617,12 +619,12 @@ def make_basin_move(
 
 			# if we're dealing with an element, redraw a move and continue
 			if len(syms) == 1:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# we obviously need more than 2 atoms in the structure to make this move
 			if len(atoms) <= 2:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# then if we have enough atoms / species, get swapping!
@@ -632,14 +634,14 @@ def make_basin_move(
 			while ready == False:
 				to_swap = len(atoms)
 				pool = list(range(len(atoms)))
-				chosen = [[choice(pool)]]
+				chosen = [[rng.choice(pool)]]
 				del pool[chosen[0][0]]
 				unique_syms = []
 				# print(chosen[0])
 				# print(atoms[chosen[0]])
 				chosen[0].append(atoms[chosen[0]].symbols[0])
 				for i in range(to_swap - 1):
-					c = [choice(pool)]
+					c = [rng.choice(pool)]
 					del pool[pool.index(c[0])]
 					c.append(atoms[c[0]].symbol)
 					chosen.append(c)
@@ -696,7 +698,7 @@ def make_basin_move(
 				sites = []
 				vacs = []
 				for i in range(len(chosen)):
-					c = random.random()
+					c = rng.random()
 					# go with a 50:50 choice between the two
 					if c < 0.5:
 						sites.append(chosen[i])
@@ -720,7 +722,7 @@ def make_basin_move(
 				all_vacs = viable.copy()  # take a copy of the vacancy site
 				while done == False:
 					try:
-						vac = choice(all_vacs)
+						vac = rng.choice(all_vacs)
 					except:
 						break
 
@@ -756,7 +758,7 @@ def make_basin_move(
 			o_symbols = symbols.copy()
 			# print("start symbols: ",o_symbols)
 			while o_symbols == symbols:
-				shuffle(symbols)
+				rng.shuffle(symbols)
 
 			for i in range(len(indicies)):
 				c = [indicies[i], symbols[i]]
@@ -794,10 +796,10 @@ def make_basin_move(
 		#	#get a copy of the input modules
 		#	start_modules=start_point['modules']
 		#	#chose the two sub modules that we want to swap
-		#	c1=choice(list(range(len(start_modules))))
+		#	c1=rng.choice(list(range(len(start_modules))))
 		#	c2=c1
 		#	while c2 == c1:
-		#		c2 = choice(list(range(len(start_modules))))
+		#		c2 = rng.choice(list(range(len(start_modules))))
 		#	
 		#	#swap the position of the two modules
 		#	
@@ -842,7 +844,7 @@ def make_basin_move(
 		#				if i != 7:
 		#					t_moves.append(i)
 		#			
-		#			move = choice(t_moves)
+		#			move = rng.choice(t_moves)
 		#			trial = 0
 		#			continue
 		#
@@ -861,14 +863,14 @@ def make_basin_move(
 			start_modules = start_point['modules'].copy()
 
 			if len(start_modules) == 1:
-				move = choice(moves_to_choose)
+				move = rng.choice(moves_to_choose)
 				continue
 
 			# chose the two sub modules that we want to swap
-			c1 = choice(list(range(len(start_modules))))
+			c1 = rng.choice(list(range(len(start_modules))))
 			c2 = c1
 			while c2 == c1:
-				c2 = choice(list(range(len(start_modules))))
+				c2 = rng.choice(list(range(len(start_modules))))
 
 			# swap the position of the two modules
 
@@ -984,7 +986,7 @@ def make_basin_move(
 						if i != 7:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					continue
 
@@ -1003,7 +1005,7 @@ def make_basin_move(
 					if i != 8:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				trial = 0
 				continue
 
@@ -1029,10 +1031,10 @@ def make_basin_move(
 				modules[i + 1] = group
 
 			# choose the layers to swap
-			c1 = choice(list(modules.keys()))
-			c2 = choice(list(modules.keys()))
+			c1 = rng.choice(list(modules.keys()))
+			c2 = rng.choice(list(modules.keys()))
 			while c2 == c1:
-				c2 = choice(list(modules.keys()))
+				c2 = rng.choice(list(modules.keys()))
 
 			# swap the keys around to swap the module order
 			old_keys = list(modules.keys())
@@ -1103,7 +1105,7 @@ def make_basin_move(
 						if i != 8:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					continue
 
@@ -1121,7 +1123,7 @@ def make_basin_move(
 					if i != 8:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				trial = 0
 				continue
 
@@ -1147,10 +1149,10 @@ def make_basin_move(
 				modules[i + 1] = group
 
 			# choose the layers to swap
-			c1 = choice(list(modules.keys()))
-			c2 = choice(list(modules.keys()))
+			c1 = rng.choice(list(modules.keys()))
+			c2 = rng.choice(list(modules.keys()))
 			while c2 == c1:
-				c2 = choice(list(modules.keys()))
+				c2 = rng.choice(list(modules.keys()))
 
 			# swap the keys around to swap the module order
 			old_keys = list(modules.keys())
@@ -1299,7 +1301,7 @@ def make_basin_move(
 						if i != 8:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					continue
 
@@ -1343,18 +1345,18 @@ def make_basin_move(
 					for j in monoclinic_solutions[i]:
 						# need to choose cell angles:
 						viable.append(
-							[j[0], j[1], j[2], choice([60, 75, 90, 105, 120, 150]), choice([60, 75, 90, 105, 120, 150]),
-							 choice([60, 75, 90, 105, 120, 150])])
+							[j[0], j[1], j[2], rng.choice([60, 75, 90, 105, 120, 150]), rng.choice([60, 75, 90, 105, 120, 150]),
+							 rng.choice([60, 75, 90, 105, 120, 150])])
 
 			try:
-				new_cell = choice(viable)
+				new_cell = rng.choice(viable)
 			except:
 				t_moves = []
 				for i in moves_to_choose:
 					if i != 9:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				trial = 0
 				continue
 
@@ -1408,7 +1410,7 @@ def make_basin_move(
 						if i != 9:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					continue
 
@@ -1425,17 +1427,17 @@ def make_basin_move(
 					if i != 11:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				continue
 
 			temp_atoms = start_point['atoms'].copy()
 			# choose direction to expand
-			axis = choice([0, 1, 2])
+			axis = rng.choice([0, 1, 2])
 			rep = [1, 1, 1]
 			rep[axis] = 2
 
 			# choose, just repeat, extend + translate?, extend + invert?, mirror? # at somepoint want to try and work out rotate!
-			typ = choice(["repeat", "translate", "invert", "mirror"])
+			typ = rng.choice(["repeat", "translate", "invert", "mirror"])
 
 			# typ="mirror"
 
@@ -1583,7 +1585,7 @@ def make_basin_move(
 						if i != 11:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					continue
 
@@ -1602,17 +1604,17 @@ def make_basin_move(
 					if i != 12:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				continue
 
 			temp_atoms = start_point['atoms'].copy()
 			# choose direction to expand
-			axis = choice([0, 1, 2])
+			axis = rng.choice([0, 1, 2])
 			rep = [1, 1, 1]
 			rep[axis] = 3
 			# print(rep)
 			# choose, just repeat, extend + translate?,# at somepoint want to try and work out rotate!
-			typ = choice(["repeat", "translate"])
+			typ = rng.choice(["repeat", "translate"])
 
 			# typ="repeat"
 
@@ -1713,7 +1715,7 @@ def make_basin_move(
 						if i != 12:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					continue
 
@@ -1788,7 +1790,7 @@ def make_basin_move(
 						if i != 12:
 							t_moves.append(i)
 
-					move = choice(t_moves)
+					move = rng.choice(t_moves)
 					trial = 0
 					break
 
@@ -1823,14 +1825,14 @@ def make_basin_move(
 
 			# if we have prebuilt available, use 50:50 of using one ot the other
 			if pre_built_to_pull == True:
-				new = choice(["random", "prebuilt"])
+				new = rng.choice(["random", "prebuilt"])
 
 			# all else fails, choose random
 			else:
 				new = "random"
 
 			if new == "prebuilt":
-				c = choice(available)
+				c = rng.choice(available)
 				temp = pre_built_structures[c]
 				atoms = temp['structure']
 				pre_built_structures[c]['used?'] = True
@@ -1897,7 +1899,7 @@ def make_basin_move(
 		if move == 10:  # move inspired by genetic algorithms, e.g. mutating / mating the structure, here may not have to be a full cut between structures, may be able to locat sub-modules or modules that we can swap in
 			start_point = current_structure.copy()
 			# print(start_point.keys())
-			opt = choice([1])
+			opt = rng.choice([1])
 			# option 1, pick a sub module, redraw the positions to original FUSE sub-modules
 			# in principle, can make an option 2, where we do this for either an entire layer or the whole structure?
 			mods = start_point['modules'].copy()
@@ -1916,11 +1918,11 @@ def make_basin_move(
 					if i != 10:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				trial = 0
 				continue
 
-			m1 = choice(viable)
+			m1 = rng.choice(viable)
 
 			m2 = start_point['modules'][m1].copy()
 
@@ -1936,7 +1938,7 @@ def make_basin_move(
 				nums.append(0)
 
 			# print(posns)
-			shuffle(nums)
+			rng.shuffle(nums)
 			# print(nums)
 			sets = {'number': [], 'position': []}
 
@@ -2003,7 +2005,7 @@ def make_basin_move(
 					if i != 10:
 						t_moves.append(i)
 
-				move = choice(t_moves)
+				move = rng.choice(t_moves)
 				trial = 0
 				continue
 

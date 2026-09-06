@@ -15,6 +15,7 @@ from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 import fuse202.structure.generate_random_structure as grs
+from fuse202.utils.rng import Rng
 from fuse202.structure.make_basin_move import make_basin_move
 from fuse202.structure.possible_solutions import CrystalSolutionsCalculator
 
@@ -123,14 +124,14 @@ def test_every_solution_key_is_reproduced_by_its_dimensions(n):
 # 3. the basin-hopping move-redraw list must not be empty
 # --------------------------------------------------------------------------
 
-def test_moves_to_choose_is_populated(monkeypatch):
+def test_moves_to_choose_is_populated():
 	"""make_basin_move() has 28 call sites that redraw a different move from
 	`moves_to_choose` when the chosen one does not apply. A refactor replaced
-	only the first pick with a weighted random.choices() call and commented out
-	the code that populated the list, leaving it permanently empty - so any
-	redraw crashed the run with "Cannot choose from an empty sequence".
+	only the first pick with a weighted choice and commented out the code that
+	populated the list, leaving it permanently empty - so any redraw crashed the
+	run with "Cannot choose from an empty sequence".
 
-	Captured at the point of use rather than asserted on the source, so it stays
+	Captured at the point of use via the injected generator, so it stays
 	meaningful if the implementation changes.
 	"""
 	captured = {}
@@ -138,12 +139,12 @@ def test_moves_to_choose_is_populated(monkeypatch):
 	class _Captured(Exception):
 		"""Sentinel: unwind as soon as the move has been picked."""
 
-	def spy(population, weights=None, k=1):
-		captured['population'] = list(population)
-		captured['weights'] = list(weights) if weights else None
-		raise _Captured
+	class SpyRng(Rng):
+		def choices(self, population, weights=None, k=1):
+			captured['population'] = list(population)
+			captured['weights'] = list(weights) if weights else None
+			raise _Captured
 
-	monkeypatch.setattr(random, "choices", spy)
 	moves = {1: 1, 2: 3, 11: 2}
 
 	# Only the move-selection step is under test. Bail out via the sentinel the
@@ -155,7 +156,39 @@ def test_moves_to_choose_is_populated(monkeypatch):
 			 'sub module cell': [], 'shape in submods': []},
 			moves, {}, 0.75, 1.5, 1.0, 0.4, True, 0.25, 'neutral', [8], {'O': 1},
 			True, 1.0, {}, {}, {}, {}, {}, 10, 40, 4, False, {}, 1, 1, 10, False, {},
+			rng=SpyRng(1),
 		)
 
 	assert captured.get('population') == [1, 2, 11]
 	assert captured.get('weights') == [1, 3, 2]
+
+
+def test_same_seed_reproduces_the_same_draws():
+	"""The point of threading a generator through instead of seeding the global
+	`random` module: a run is repeatable from its seed, and nothing else in the
+	process has its randomness disturbed."""
+	a, b, different = Rng(1234), Rng(1234), Rng(9999)
+	population = ['x', [1, 2], (3, 4), 7]
+	draws_a = [a.choice(population) for _ in range(20)]
+	draws_b = [b.choice(population) for _ in range(20)]
+	draws_c = [different.choice(population) for _ in range(20)]
+	assert draws_a == draws_b
+	assert draws_a != draws_c
+
+
+@settings(max_examples=30, deadline=None)
+@given(seed=st.integers(min_value=0, max_value=2 ** 31 - 1))
+def test_choice_never_returns_numpy_types(seed):
+	"""numpy's own Generator.choice returns numpy scalars, and given a list of
+	lists it reinterprets the input as a 2-D array and hands back an ndarray
+	row. Numpy ints leaking into the structure string is exactly what broke
+	atom counting on Python 3.12+, so Rng.choice must return the original
+	objects untouched."""
+	rng = Rng(seed)
+	assert type(rng.choice([1, 2, 3])) is int
+	assert type(rng.choice([[1, 2], [3, 4]])) is list
+	assert type(rng.choice(['a', 'b'])) is str
+	shuffled = [1, 2, 3, 4, 5]
+	rng.shuffle(shuffled)
+	assert all(type(x) is int for x in shuffled)
+	assert sorted(shuffled) == [1, 2, 3, 4, 5]

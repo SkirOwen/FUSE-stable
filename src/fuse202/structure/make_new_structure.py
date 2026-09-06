@@ -9,7 +9,7 @@ from fuse202.structure.extract_modules import *
 from fuse202.structure.generate_random_structure import *
 from fuse202.structure.possible_solutions import *
 # other imports
-from random import choice
+from fuse202.utils.rng import default_rng
 
 
 def get_new_structure(
@@ -38,7 +38,10 @@ def get_new_structure(
 		fu='',
 		ap='',
 		use_spglib='',
+		rng=None,
 ):
+	if rng is None:
+		rng = default_rng()
 	gen = False
 	# generate_random_structure() gives up after its own internal attempt budget
 	# and returns atoms=None. Without a cap here we would just ask it again,
@@ -61,7 +64,7 @@ def get_new_structure(
 		##############################################################################
 		# now call the generate random structure function
 		# for each iteration of generating n structures:
-		target_fu = choice(list(range(1, imax_fus + 1)))
+		target_fu = rng.choice(list(range(1, imax_fus + 1)))
 		target_atoms = target_fu * atoms_per_fu
 
 		atoms, string, instructions, accept = generate_random_structure(
@@ -86,6 +89,7 @@ def get_new_structure(
 			vac_ratio=vac_ratio,
 			max_fus=imax_fus,
 			target_number_atoms=target_atoms,
+			rng=rng,
 		)
 
 		##############################################################################

@@ -1,9 +1,9 @@
-import random
 
 from ase import *
 from torch.optim.radam import radam
 
 import fuse202.structure.possible_solutions
+from fuse202.utils.rng import default_rng
 # from fuse_102.example_input_only.gulp.input_gulp_example import imax_atoms
 
 
@@ -22,8 +22,11 @@ def create_random_string(
 		max_fus='',
 		system_type='',
 		composition='',
-		ap=''
+		ap='',
+		rng=None
 ):
+	if rng is None:
+		rng = default_rng()
 	### now need to rework this so that it is sensibly assembling structures in the
 	# modular motifs from the original FUSE, the completely random strings are not
 	# working very well!
@@ -67,9 +70,9 @@ def create_random_string(
 	while accept == 0:
 		target = 0
 		latt_attemp = 0
-		lattice = random.choice([0, 1, 2, 3, 4, 5])
+		lattice = rng.choice([0, 1, 2, 3, 4, 5])
 		if latt_attemp >= 5000:
-			lattice = random.choice([0, 1, 2, 3, 4, 5])
+			lattice = rng.choice([0, 1, 2, 3, 4, 5])
 			# lattice=2
 			latt_attemp = 0
 		latt_attemp += 1
@@ -98,7 +101,7 @@ def create_random_string(
 			if nsubs_1[i] <= max_sub:
 				nsubs_2.append(nsubs_1[i])
 
-		nsub = random.choice(nsubs_2)
+		nsub = rng.choice(nsubs_2)
 		target = nsub * 4
 
 		temp_max = int(target / len(fu))
@@ -109,7 +112,7 @@ def create_random_string(
 		# choose number of formula units to use
 		temp = list(range(1, temp_max + 1))
 		if len(temp) > 0:
-			fus = random.choice(temp)
+			fus = rng.choice(temp)
 		else:
 			break
 		# append n fus to an empty string
@@ -133,7 +136,7 @@ def create_random_string(
 		# system_type='neutral'
 		### now error check the strings currently only required for ionic structures 
 		if system_type == 'neutral':
-			random.shuffle(string)
+			rng.shuffle(string)
 			if len(string) == target:
 				accept += 1
 
@@ -175,13 +178,13 @@ def create_random_string(
 				difference = int(len(As) - number_of_modules)
 				cats_to_move = []
 				for z in range(difference):
-					chosen = random.choice(As)
+					chosen = rng.choice(As)
 					cats_to_move.append(chosen)
 					As.remove(chosen)
 
 			string = []
-			random.shuffle(As)
-			random.shuffle(Bs)
+			rng.shuffle(As)
+			rng.shuffle(Bs)
 			for i in range(len(As)):
 				string.append(As[-1])
 				del (As[-1])
@@ -189,7 +192,7 @@ def create_random_string(
 					string.append(Bs[-1:][0])
 					del (Bs[-1:])
 
-			# shuffle(string)
+			# rng.shuffle(string)
 
 			# print(string)
 			# print("count 8s: ",string.count(8))
@@ -247,7 +250,7 @@ class RandomStructureGenerator:
 
 	def _select_random_lattice(self) -> int:
 		"""Randomly selects a lattice type."""
-		return random.choice(list(self.solutions_dict.keys()))
+		return rng.choice(list(self.solutions_dict.keys()))
 
 	def _select_number_of_submodules(self, lattice: int, max_sub: int) -> int | None:
 		"""
@@ -257,12 +260,12 @@ class RandomStructureGenerator:
 		solutions = self.solutions_dict[lattice]
 
 		valid_nsubs = [n for n in solutions.keys() if n <= max_sub]
-		return random.choice(valid_nsubs) if valid_nsubs else None
+		return rng.choice(valid_nsubs) if valid_nsubs else None
 
 	def _generate_initial_string(self, target: int) -> list[int]:
 		"""Generates an initial atomic configuration string."""
 		temp_max = target // len(self.fu)
-		fus = random.choice(list(range(1, temp_max + 1))) if temp_max > 0 else None
+		fus = rng.choice(list(range(1, temp_max + 1))) if temp_max > 0 else None
 		if fus is None:
 			return []
 
@@ -301,12 +304,12 @@ class RandomStructureGenerator:
 		if len(As) > number_of_modules:
 			extra_cations = len(As) - number_of_modules
 			for _ in range(extra_cations):
-				As.remove(random.choice(As))
+				As.remove(rng.choice(As))
 
 		# Rebuild the string with submodule placement
 		new_string = []
-		random.shuffle(As)
-		random.shuffle(Bs)
+		rng.shuffle(As)
+		rng.shuffle(Bs)
 
 		for _ in range(len(As)):
 			new_string.append(As.pop())
@@ -336,7 +339,7 @@ class RandomStructureGenerator:
 
 			# Perform error checks based on system type
 			if self.system_type == "neutral":
-				random.shuffle(string)
+				rng.shuffle(string)
 				accept = len(string) == target
 
 			elif self.system_type == "ionic":
@@ -368,7 +371,7 @@ def main():
 	imax_fus: int = imax_atoms // atoms_per_fu
 	max_fus: int = max_atoms // atoms_per_fu
 
-	target_fu = random.choice(list(range(1, imax_fus + 1)))
+	target_fu = rng.choice(list(range(1, imax_fus + 1)))
 
 	fu = []
 	for element, count in composition.items():
