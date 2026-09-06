@@ -41,6 +41,27 @@ that the same algorithms become code where this class of bug is hard to write.
 - **Group now, public later.** Design so a public release needs no rework; do not
   pay the full cost of one yet.
 
+- **Rename the package to `fuse_csp`, as the last step before release.** The
+  current name bakes a version number into the package, which is a leftover from
+  when several versions lived side by side in one repository, the same pattern as
+  the `FUSE2p02` directory that has already been removed. `import fuse202` in
+  version 3 makes no sense, and a version 4 would face the same question again.
+
+  Import name `fuse_csp`, distribution name `fuse-csp`. Plain `fuse` reads better
+  but is taken on PyPI, and more importantly `import fuse` is what the
+  `fuse-python` Filesystem in Userspace bindings provide, so a user who happens to
+  have those installed would get a confusing collision. Four extra characters buy
+  permanent unambiguity for something that may end up cited in papers.
+
+  `fuse202` stays importable as a shim that re-exports from `fuse_csp`, so
+  existing input scripts continue to work.
+
+  Timing: at the end of the v3 work, not the start. Doing it first would mean
+  every intermediate commit churns import paths for a rename that touches every
+  file; doing it last makes it one mechanical commit against a settled structure.
+  The cost of waiting is that v3 commits until then use a name we already know is
+  wrong, which is worth stating in the commit that eventually changes it.
+
 ## Design criteria
 
 Each of these exists because something specific went wrong. They are acceptance
@@ -62,6 +83,13 @@ criteria, not aspirations.
 4. **Boundaries normalise types.** Values entering the domain from ase, numpy or a
    calculator are converted to Python types at the edge. *Origin: `numpy.int64`
    broke atom counting; `numpy.float32` broke every CHGNet run. Same bug twice.*
+   Worth being clear that no precision is being given up: nothing ever chose
+   int64. ase stores atomic numbers in an array of that dtype, so indexing one
+   element hands back a numpy scalar. It is eight bytes carrying a value between
+   1 and 118, which needs seven bits. Numpy arrays remain the right
+   representation for positions and other bulk numeric work; it is only the
+   single values leaking out of them into ordinary Python code that cause
+   trouble.
 
 5. **Loops terminate provably.** Every retry has a bound and a clear error when it
    is exhausted. *Origin: two unbounded loops; one had no cap at all, the other's
