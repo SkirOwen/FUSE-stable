@@ -34,6 +34,18 @@ It runs a complete (very small) structure search for SrTiO3 using the CHGNet
 machine-learned potential, and writes .cif files plus an `output.txt`. If those
 appear, your installation is working.
 
+To see what is installed and which calculators are available without running
+anything:
+
+```
+uv run fuse202 check
+```
+
+It reports the core dependencies, whether the ML potential is installed, whether
+GULP or VASP are configured, and which `ctype` values you can therefore use. It
+exits non-zero only if something FUSE cannot work without is missing - not
+having GULP or VASP is a normal state, not an error.
+
 ## Installation
 
 ```
