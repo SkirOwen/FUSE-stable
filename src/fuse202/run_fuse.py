@@ -211,7 +211,13 @@ def run_fuse(
 
 		# CHGNET
 		n_opts=2,
-		rel=StructOptimizer(),
+		rel=None,  # currently unused: run_chgnet() constructs its own
+		# StructOptimizer per entry in opt_class (see below). Kept for
+		# backwards compatibility with existing input scripts. It used to
+		# default to StructOptimizer(), a mutable default evaluated at import
+		# time, which loaded a full CHGNet model on `import fuse202.run_fuse`
+		# whether or not a calculation was ever run - twice over, since
+		# run_chgnet carried the same default.
 		relaxer_opts={
 			'fmax': [0.1, 0.05],
 			'steps': [250, 750]
@@ -448,14 +454,18 @@ def run_fuse(
 
 				# let the user know that the restart files were successfully read
 				print("Could not load restart files, reverted to backup")
-			except:
-				print("failed to load any restart files, aborting job")
-				sys.exit()
+			except Exception as error:
+				# An error, not a normal ending: raise so a caller (or the CLI)
+				# can report it and exit non-zero, instead of ending the whole
+				# process from inside a library function.
+				raise RuntimeError(
+					"failed to load any restart files, aborting job"
+				) from error
 
 		# check to see if the calculation had been previously converged
 		if r >= rmax:
 			print("\n\n***The search routine has already converged. Exiting.*** \n\n")
-			sys.exit()
+			return
 
 		os.chdir("../")
 
@@ -730,7 +740,7 @@ def run_fuse(
 				print("structure generation complete")
 				print("\ntotal time: " + str(t2 - t1) + " hours:minutes:seconds")
 				o.write("\ntotal time: " + str(t2 - t1) + " hours:minutes:seconds\n")
-				sys.exit()
+				return
 
 			else:
 				print("structure generation complete")
@@ -1686,9 +1696,9 @@ def run_fuse(
 	print("\ntotal time: " + str(t2 - t1) + " hours:minutes:seconds")
 	o.write("\ntotal time: " + str(t2 - t1) + " hours:minutes:seconds\n")
 
-	# close the output file and exit
+	# close the output file and hand control back to the caller
 	o.close()
-	sys.exit()
+	return
 
 
 def get_fu(composition: dict) -> list[int | float]:

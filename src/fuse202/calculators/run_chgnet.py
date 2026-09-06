@@ -35,7 +35,10 @@ def check_isolated_atoms(atoms: Atoms, threshold: float = 6.0) -> bool:
 def run_chgnet(
 		atoms,
 		n_opts: int = 2,
-		rel=StructOptimizer(),
+		rel=None,  # unused: this function builds its own StructOptimizer per
+		# opt_class entry below. Kept for backwards compatibility; it used to
+		# default to StructOptimizer(), a mutable default that loaded a CHGNet
+		# model at import time.
 		relaxer_opts: dict | None = None,
 		opt_class: list[str] | None = None,
 		mode: str = 'relax',

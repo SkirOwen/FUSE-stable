@@ -3,14 +3,11 @@ real GULP/VASP/QE/CHGNet install is needed.
 
 run_fuse() is a single ~1750-line function (fuse202/run_fuse.py) that changes
 the working directory and writes a large number of pickle/cif/output files as
-it runs, and calls sys.exit() unconditionally at the end of a completed run
-(see run_fuse.py around line 1844) - so every test here runs inside an
-isolated tmp_path (via monkeypatch.chdir) and expects SystemExit rather than
-a normal return. That sys.exit() also means run_fuse() can only sensibly be
-called once per process - it isn't designed to be invoked repeatedly or
-composed with other code today. This test file exists to pin *that* observed
-behavior, not to declare it correct - Phase 4 (breaking up run_fuse) is where
-that gets revisited.
+it runs, so every test here runs inside an isolated tmp_path (via monkeypatch.chdir).
+
+run_fuse() used to end in sys.exit(), which meant it could only be called once
+per process and could not be wrapped or composed - these tests had to assert
+SystemExit. It now returns normally, so they call it directly.
 
 get_new_structure() (the random initial-population generator) is ALSO faked
 here, not just the energy calculator - see test_generate_random_structure.py
@@ -64,19 +61,18 @@ def test_run_fuse_completes_one_gulp_iteration_with_fake_calculator(tmp_path, mo
 		lambda **kwargs: _canned_srtio3_structure(),
 	)
 
-	with pytest.raises(SystemExit):
-		run_fuse(
-			composition={'Sr': 1, 'Ti': 1, 'O': 3},
-			max_atoms=5,
-			imax_atoms=5,
-			initial_gen=1,
-			iterations=1,
-			ctype='gulp',
-			kwds='opti conp',
-			gulp_opts=['\ndump temp.res\n'],
-			lib='dummy.lib',
-			output_graph_at_end=False,
-		)
+	run_fuse(
+		composition={'Sr': 1, 'Ti': 1, 'O': 3},
+		max_atoms=5,
+		imax_atoms=5,
+		initial_gen=1,
+		iterations=1,
+		ctype='gulp',
+		kwds='opti conp',
+		gulp_opts=['\ndump temp.res\n'],
+		lib='dummy.lib',
+		output_graph_at_end=False,
+	)
 
 	assert fake_gulp.call_log, "run_fuse() never invoked the (faked) GULP calculator"
 
@@ -119,22 +115,21 @@ def test_run_fuse_drives_the_basin_hopping_search_loop(tmp_path, monkeypatch):
 
 	monkeypatch.setattr("fuse202.run_fuse.make_basin_move", fake_make_basin_move)
 
-	with pytest.raises(SystemExit):
-		run_fuse(
-			composition={'Sr': 1, 'Ti': 1, 'O': 3},
-			max_atoms=5,
-			imax_atoms=5,
-			initial_gen=1,
-			iterations=3,
-			search=1,          # basin hopping
-			search_gen_bh=1,
-			rmax=1000,
-			ctype='gulp',
-			kwds='opti conp',
-			gulp_opts=['\ndump temp.res\n'],
-			lib='dummy.lib',
-			output_graph_at_end=False,
-		)
+	run_fuse(
+		composition={'Sr': 1, 'Ti': 1, 'O': 3},
+		max_atoms=5,
+		imax_atoms=5,
+		initial_gen=1,
+		iterations=3,
+		search=1,          # basin hopping
+		search_gen_bh=1,
+		rmax=1000,
+		ctype='gulp',
+		kwds='opti conp',
+		gulp_opts=['\ndump temp.res\n'],
+		lib='dummy.lib',
+		output_graph_at_end=False,
+	)
 
 	assert basin_moves, "search loop never ran - make_basin_move was not called"
 	# one call for the initial population, plus one per trial structure
@@ -149,3 +144,30 @@ def test_run_fuse_drives_the_basin_hopping_search_loop(tmp_path, monkeypatch):
 	assert (tmp_path / "current_structure.cif").exists()
 	output = (tmp_path / "output.txt").read_text()
 	assert "Swap two atoms" in output, "the move description was not logged"
+
+
+def test_run_fuse_can_be_called_twice_in_one_process(tmp_path, monkeypatch):
+	"""run_fuse() used to end in sys.exit(), so it could only ever run once per
+	process and could not be wrapped, composed, or driven from a CLI. It now
+	returns, so a caller can run it repeatedly - here, two searches in two
+	working directories from a single process."""
+	fake_gulp = FakeCalculator(per_atom_energies=(-10.0, -10.5))
+	monkeypatch.setattr("fuse202.calculators.dispatch.run_gulp", fake_gulp.gulp)
+	monkeypatch.setattr(
+		"fuse202.run_fuse.get_new_structure",
+		lambda **kwargs: _canned_srtio3_structure(),
+	)
+
+	for run_number in (1, 2):
+		run_directory = tmp_path / f"run{run_number}"
+		run_directory.mkdir()
+		monkeypatch.chdir(run_directory)
+		run_fuse(
+			composition={'Sr': 1, 'Ti': 1, 'O': 3},
+			max_atoms=5, imax_atoms=5, initial_gen=1, iterations=1,
+			ctype='gulp', kwds='opti conp', gulp_opts=['\ndump temp.res\n'],
+			lib='dummy.lib', output_graph_at_end=False, seed=run_number,
+		)
+		assert (run_directory / "output.txt").exists(), f"run {run_number} produced no output"
+
+	assert len(fake_gulp.call_log) == 2, "both runs should have relaxed a structure"
