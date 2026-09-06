@@ -62,6 +62,10 @@ def check_relaxed_structure(
 		converged = False
 		energy = FAILED_ENERGY
 
-	energy = energy / len(atoms)
+	# float() before Decimal(): backends do not all return a Python float.
+	# CHGNet hands back numpy.float32, and Decimal refuses numpy types outright
+	# ("conversion from numpy.float32 to Decimal is not supported"), which made
+	# ctype='chgnet' fail on the first structure it ever relaxed.
+	energy = float(energy) / len(atoms)
 	energy = float(Decimal(energy).quantize(Decimal(str(e_prec))))
 	return energy, converged

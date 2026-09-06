@@ -81,3 +81,17 @@ def test_accepted_energy_is_always_the_per_atom_average(total_energy, n_atoms):
 		atoms, total_energy, True, expected_atoms=n_atoms, dist_cutoff=1.0, e_prec=1.e-5)
 	assert converged is True
 	assert energy == pytest.approx(total_energy / n_atoms, abs=1e-4)
+
+
+@pytest.mark.parametrize("numpy_type", ["float32", "float64"])
+def test_numpy_energies_from_a_backend_are_accepted(numpy_type, spread_out_cell):
+	"""Backends do not all return a Python float - CHGNet returns numpy.float32,
+	and Decimal refuses numpy types outright. That made ctype='chgnet' fail on
+	the first structure it relaxed, before this conversion was added."""
+	import numpy as np
+	energy, converged = check_relaxed_structure(
+		spread_out_cell, getattr(np, numpy_type)(-100.0), True,
+		expected_atoms=2, dist_cutoff=1.0, e_prec=1.e-5)
+	assert converged is True
+	assert energy == pytest.approx(-50.0)
+	assert type(energy) is float
