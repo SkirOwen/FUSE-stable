@@ -32,6 +32,7 @@ from fuse202.structure.make_basin_move import *
 from fuse202.structure.make_new_structure import *
 from fuse202.plot_results import *
 from fuse202.structure.possible_solutions import calculate_possible_solutions
+from fuse202.calculators.dispatch import run_calculator
 from fuse202.calculators.run_chgnet import *
 from fuse202.calculators.run_gulp import *
 from fuse202.calculators.run_multiple_calculators import run_calculators
@@ -1162,69 +1163,15 @@ def run_fuse(
 		if ratt_dist > 0:
 			atoms.rattle(ratt_dist)
 
-		if ctype == 'gulp':
-			try:
-				atoms, energy, converged = run_gulp(atoms=atoms, shel=shel, kwds=kwds, opts=gulp_opts, lib=lib,
-				                                    produce_steps=False, gulp_command=gulp_command,
-				                                    gulp_timeout=gulp_timeout)
-			except:
-				converged = False
-				energy = 1.e20
-
-		if ctype == 'vasp':
-			try:
-				atoms, energy, converged = run_vasp(atoms=atoms, vasp_opts=vasp_opts, kcut=kcut, produce_steps=False,
-				                                    dist_cutoff=dist_cutoff)
-			except:
-				# print('except')
-				converged = False
-				energy = 1.e20
-
-		if ctype == 'qe':
-			try:
-				atoms, energy, converged = run_qe(atoms=atoms, qe_opts=qe_opts, kcut=kcut, produce_steps=False)
-			except:
-				converged = False
-				energy = 1.e20
-
-		if ctype == 'chgnet':
-			try:
-				atoms, energy, converged = run_chgnet(atoms, n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts,
-				                                      opt_class=opt_class, opt_device=opt_device, use_spglib=use_spglib,
-				                                      mode=mode)
-
-			except:
-				converged = False
-				energy = 1.e20
-
-		if ctype == 'mixed':
-
-			try:
-				atoms, energy, converged = run_calculators(
-					atoms=atoms,
-					vasp_opts=vasp_opts,
-					kcut=kcut,
-					produce_steps=None,
-					shel=shel,
-					kwds=kwds,
-					gulp_opts=gulp_opts,
-					lib=lib,
-					calcs=calcs,
-					dist_cutoff=dist_cutoff,
-					qe_opts=qe_opts,
-					gulp_command=gulp_command,
-					gulp_timeout=gulp_timeout,
-					n_opts=n_opts,
-					rel=rel,
-					relaxer_opts=relaxer_opts,
-					opt_class=opt_class,
-					opt_device=opt_device,
-					mode=mode,
-				)
-
-			except:
-				converged = False
-				energy = 1.e20
+		atoms, energy, converged = run_calculator(
+			ctype, atoms,
+			shel=shel, kwds=kwds, gulp_opts=gulp_opts, lib=lib,
+			gulp_command=gulp_command, gulp_timeout=gulp_timeout,
+			vasp_opts=vasp_opts, kcut=kcut, dist_cutoff=dist_cutoff,
+			qe_opts=qe_opts, calcs=calcs,
+			n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts, opt_class=opt_class,
+			opt_device=opt_device, mode=mode, use_spglib=use_spglib,
+		)
 
 		# make sure we have the same number of atoms
 		if len(atoms) != iat:
@@ -1528,57 +1475,15 @@ def run_fuse(
 				if ratt_dist > 0:
 					atoms.rattle(ratt_dist)
 
-				if ctype == 'gulp':
-					try:
-						print("len atoms start:", len(atoms))
-						atoms, energy, converged = run_gulp(atoms=atoms, shel=shel, kwds=kwds, opts=gulp_opts, lib=lib,
-						                                    produce_steps=False, gulp_command=gulp_command,
-						                                    gulp_timeout=gulp_timeout)
-						print("len atoms end:", len(atoms))
-					except:
-						converged = False
-						energy = 1.e20
-
-				if ctype == 'vasp':
-					try:
-						atoms, energy, converged = run_vasp(atoms=atoms, vasp_opts=vasp_opts, kcut=kcut,
-						                                    produce_steps=False, dist_cutoff=dist_cutoff)
-					except:
-						# print('except')
-						converged = False
-						energy = 1.e20
-
-				if ctype == 'qe':
-					try:
-						atoms, energy, converged = run_qe(atoms=atoms, qe_opts=qe_opts, kcut=kcut, produce_steps=False)
-					except:
-						converged = False
-						energy = 1.e20
-
-				if ctype == 'chgnet':
-					try:
-						atoms, energy, converged = run_chgnet(atoms, n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts,
-						                                      opt_class=opt_class, opt_device=opt_device, mode=mode)
-
-					except:
-						converged = False
-						energy = 1.e20
-
-				if ctype == 'mixed':
-
-					try:
-						atoms, energy, converged = run_calculators(atoms=atoms, vasp_opts=
-						vasp_opts, kcut=kcut, produce_steps=None, shel=shel,
-						                                           kwds=kwds, gulp_opts=gulp_opts, lib=lib, calcs=calcs,
-						                                           dist_cutoff=dist_cutoff, qe_opts=qe_opts,
-						                                           gulp_command=gulp_command, gulp_timeout=gulp_timeout,
-						                                           n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts,
-						                                           opt_class=opt_class,
-						                                           opt_device=opt_device, mode=mode)
-
-					except:
-						converged = False
-						energy = 1.e20
+				atoms, energy, converged = run_calculator(
+					ctype, atoms,
+					shel=shel, kwds=kwds, gulp_opts=gulp_opts, lib=lib,
+					gulp_command=gulp_command, gulp_timeout=gulp_timeout,
+					vasp_opts=vasp_opts, kcut=kcut, dist_cutoff=dist_cutoff,
+					qe_opts=qe_opts, calcs=calcs,
+					n_opts=n_opts, rel=rel, relaxer_opts=relaxer_opts, opt_class=opt_class,
+					opt_device=opt_device, mode=mode, use_spglib=use_spglib,
+				)
 
 				# check to make sure we still have the correct number of atoms!
 				if len(atoms) != iat:

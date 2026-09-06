@@ -58,7 +58,7 @@ def _canned_srtio3_structure():
 def test_run_fuse_completes_one_gulp_iteration_with_fake_calculator(tmp_path, monkeypatch):
 	monkeypatch.chdir(tmp_path)
 	fake_gulp = FakeCalculator(fixed_energy=-10.0, converged=True)
-	monkeypatch.setattr("fuse202.run_fuse.run_gulp", fake_gulp.gulp)
+	monkeypatch.setattr("fuse202.calculators.dispatch.run_gulp", fake_gulp.gulp)
 	monkeypatch.setattr(
 		"fuse202.run_fuse.get_new_structure",
 		lambda **kwargs: _canned_srtio3_structure(),
@@ -105,7 +105,7 @@ def test_run_fuse_drives_the_basin_hopping_search_loop(tmp_path, monkeypatch):
 	"""
 	monkeypatch.chdir(tmp_path)
 	fake_gulp = FakeCalculator(per_atom_energies=(-10.0, -10.5, -9.5), converged=True)
-	monkeypatch.setattr("fuse202.run_fuse.run_gulp", fake_gulp.gulp)
+	monkeypatch.setattr("fuse202.calculators.dispatch.run_gulp", fake_gulp.gulp)
 	monkeypatch.setattr(
 		"fuse202.run_fuse.get_new_structure",
 		lambda **kwargs: _canned_srtio3_structure(),
