@@ -10,6 +10,7 @@ from ase import Atoms
 from ase.io import *
 from ase.visualize import *
 from fuse202.bonds.bond_table import BOND_DATA
+from fuse202.domain.structure import Structure
 
 bondtable = BOND_DATA
 
@@ -215,14 +216,14 @@ def extract_module(
 
 				# Need to move the range of co-ordinates that we're searching for for the next sub-module
 
-		structure = {
-			'modules': modules,
-			'sub module cell': sub_module_cell,
-			'shape in submods': sub_modules,
-			'nmods': n_sub,
-			'ap': initial_guess,
-			'atoms': full_structure,
-		}
+		structure = Structure(
+			modules=modules,
+			sub_module_cell=sub_module_cell,
+			shape_in_submods=sub_modules,
+			nmods=n_sub,
+			ap=initial_guess,
+			atoms=full_structure,
+		)
 
 		# if there's a specified limit on the maximum fractional co-ordinate for a sub module, go through and scale the sub_module positions:
 		scale = False
