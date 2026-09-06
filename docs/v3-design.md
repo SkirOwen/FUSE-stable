@@ -130,11 +130,15 @@ Binding for v3 and for any new code added to v2.
 1. **Tabs for indentation.** Actual tab characters, not four spaces. The existing
    codebase uses tabs and mixing the two is worse than either.
 2. **Numpy style docstrings.** Parameters, Returns, and where useful Raises.
-3. **Docstrings describe the function, not its history.** What it does, what it
-   takes, what it returns. Why a line exists, what bug it guards against, and how
-   the code came to look this way belong in ordinary comments next to the code or
-   in the commit message. A reader calling the function does not need its
-   biography.
+3. **The description describes the function; context goes in Notes.** The
+   summary and description say what the function does, what it takes, and what it
+   returns, and nothing else. Supplementary context, why a guard exists, what bug
+   it prevents, an algorithmic caveat, belongs in a numpy style `Notes` section.
+   That keeps the description readable for someone who just wants to call it,
+   while the reasoning stays discoverable through `help()` and generated docs
+   rather than buried in inline comments. Anything that is purely how the code
+   came to be written, as opposed to why it is written that way, belongs in the
+   commit message instead.
 4. **No dashes in docstrings.** No em dashes, en dashes, or hyphens used as
    punctuation. Use commas, semicolons, parentheses, or a new sentence. Hyphens
    inside real compound words are fine.

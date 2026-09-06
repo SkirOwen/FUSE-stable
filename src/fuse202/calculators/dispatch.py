@@ -67,6 +67,13 @@ def run_calculator(
 		The relaxed structure, its energy, and whether the calculation
 		converged. On any failure the atoms are returned unchanged with
 		FAILED_ENERGY and converged False.
+
+	Notes
+	-----
+	The `except Exception` is deliberately broad, because any backend failure
+	should cost one candidate rather than the whole job. It is not a bare
+	`except`, so KeyboardInterrupt and SystemExit still stop the run; a bare one
+	here previously made a long calculation impossible to interrupt.
 	"""
 	try:
 		if ctype == 'gulp':
@@ -102,9 +109,6 @@ def run_calculator(
 			)
 
 	except Exception:
-		# Deliberately broad: any backend failure rejects this one structure and
-		# the search moves on. Exception rather than a bare except, so that
-		# KeyboardInterrupt and SystemExit still stop the run.
 		return atoms, FAILED_ENERGY, False
 
 	return atoms, FAILED_ENERGY, False

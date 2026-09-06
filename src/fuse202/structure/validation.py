@@ -76,6 +76,13 @@ def check_relaxed_structure(
 	-------
 	tuple of (float, bool)
 		Energy in eV per atom, and the updated convergence flag.
+
+	Notes
+	-----
+	The energy is converted with `float()` before `Decimal`. Backends do not all
+	return a Python float: CHGNet returns numpy.float32, which Decimal rejects
+	outright, so omitting the conversion makes every CHGNet run fail on the
+	first structure it relaxes.
 	"""
 	if len(atoms) != expected_atoms:
 		converged = False
@@ -85,8 +92,6 @@ def check_relaxed_structure(
 		converged = False
 		energy = FAILED_ENERGY
 
-	# float() first: backends do not all return a Python float. CHGNet returns
-	# numpy.float32, which Decimal rejects outright.
 	energy_per_atom = float(energy) / len(atoms)
 	rounded = Decimal(energy_per_atom).quantize(Decimal(str(e_prec)))
 	energy_per_atom = float(rounded)

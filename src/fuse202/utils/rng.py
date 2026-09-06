@@ -22,8 +22,18 @@ class Rng(random.Random):
 	Attributes
 	----------
 	seed_value : int
-		The seed in use. Named `seed_value` because `seed` is random.Random's
-		own re seeding method.
+		The seed in use.
+
+	Notes
+	-----
+	The attribute is `seed_value` rather than `seed` because `seed` is
+	random.Random's own re seeding method.
+
+	Generators are passed explicitly rather than taken from the process wide
+	`random` module because the module level seed is global: a hardcoded
+	`random.seed(25)` left in a leaf function once froze randomness for the
+	entire program, so structure generation returned the same structure every
+	time and basin hopping move selection was frozen with it.
 	"""
 
 	def __init__(self, seed: int | None = None):

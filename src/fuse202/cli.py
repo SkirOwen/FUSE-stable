@@ -77,14 +77,18 @@ def _check_import(module_name: str, distribution_name: str = "") -> tuple[bool, 
 def check(argv=None) -> int:
 	"""Report what is installed and which calculators are available.
 
-	A missing external chemistry code is not an error, since CHGNet alone is
-	enough to run, so those are reported without affecting the exit status.
-
 	Returns
 	-------
 	int
 		0 when the core installation is usable, 1 when something the package
 		cannot work without is missing.
+
+	Notes
+	-----
+	A missing external chemistry code is not an error, since CHGNet alone is
+	enough to run a calculation, so those are reported without affecting the
+	exit status. Only a missing core dependency makes the installation
+	unusable.
 	"""
 	print("FUSE installation check")
 	print("=" * 60)
